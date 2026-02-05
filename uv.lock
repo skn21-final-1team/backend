@@ -658,6 +658,7 @@ wheels = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -667,6 +668,8 @@ wheels = [
 ]
 
 [[package]]
+=======
+>>>>>>> 587ee8c8c8b4db5a2aede9deb05b95a58547feb8
 name = "sqlalchemy"
 version = "2.0.46"
 source = { registry = "https://pypi.org/simple" }
