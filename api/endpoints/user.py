@@ -15,7 +15,9 @@ router = APIRouter()
 
 
 @router.get("/me", response_model=UserResponse)
-def get_my_info(current_user: dict[str, str | int] = Depends(get_current_user)) -> UserResponse:
+def get_my_info(
+    current_user: dict[str, str | int] = Depends(get_current_user),  # noqa: B008 - FastAPI 표준 DI 패턴
+) -> UserResponse:
     """
     내 정보 조회 (JWT 토큰 필수)
 

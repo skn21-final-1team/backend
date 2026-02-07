@@ -10,7 +10,7 @@ class LoginResponse(BaseModel):
     message: str
     user_email: str
     access_token: str
-    token_type: str = "bearer"
+    token_type: str = "bearer"  # noqa: S105 - OAuth2 표준 토큰 타입 (비밀번호 아님)
 
 
 class TokenData(BaseModel):
