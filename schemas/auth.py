@@ -9,3 +9,15 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     message: str
     user_email: str
+
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+
+
+class SignupResponse(BaseModel):
+    message: str
+    user_id: int
+    user_email: str
