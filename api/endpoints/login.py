@@ -6,6 +6,6 @@ from services.login import login_service
 router = APIRouter()
 
 
-@router.post("", response_model=LoginResponse)
+@router.post("/", response_model=LoginResponse)
 def login(login_request: LoginRequest) -> LoginResponse:
     return login_service.login(login_request)

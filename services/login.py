@@ -1,8 +1,13 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from schemas.auth import LoginRequest, LoginResponse
+
 from fastapi import HTTPException, status
 
-from schemas.auth import LoginRequest, LoginResponse
-
-# DB 연결 시 삭제 예정, crud 구현 필요
+# DB 연결 시 삭제 예정
 DUMMY_USERS = {
     "test@example.com": "password123",
     "admin@example.com": "admin1234",
@@ -30,3 +35,17 @@ class LoginService:
 
 
 login_service = LoginService()
+
+
+if __name__ == "__main__":
+    print("=== Login Service Test ===")
+    email = "admin@example.com"
+    password = "admin1234"
+
+    stored_password = DUMMY_USERS.get(email)
+    if stored_password is None:
+        print(f"[X] Login Failed: '{email}' user not found.")
+    elif password != stored_password:
+        print("[X] Login Failed: Password does not match.")
+    else:
+        print(f"[O] Login Success: {email}")
