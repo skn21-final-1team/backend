@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     api_str: str = Field(default="/api", alias="API_STR")
     secret_key: str = Field(default="your-secret-key-here", alias="SECRET_KEY")
 
+    jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
+    access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+
 
 @lru_cache
 def get_settings() -> Settings:

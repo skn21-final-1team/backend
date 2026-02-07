@@ -9,6 +9,13 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     message: str
     user_email: str
+    access_token: str
+    token_type: str = "bearer"
+
+
+class TokenData(BaseModel):
+    user_id: int | None = None
+    email: str | None = None
 
 
 class SignupRequest(BaseModel):
