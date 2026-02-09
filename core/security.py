@@ -6,8 +6,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from core.config import get_settings
+from crud.user import get_user_by_email
 from schemas.auth import TokenData
-from services.signup import get_user_by_email
 
 settings = get_settings()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
