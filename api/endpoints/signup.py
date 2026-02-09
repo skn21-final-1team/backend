@@ -15,4 +15,4 @@ router = APIRouter()
 )
 def signup(request: SignupRequest, db: DbSession) -> BaseResponse[None]:
     signup_service.signup(request, db)
-    return BaseResponse.ok(message="Signup successful")
+    return BaseResponse.ok(data=None, message="Signup successful")

@@ -8,10 +8,7 @@ from schemas.response import BaseResponse
 
 def custom_base_handler(request: Request, exc: CustomException) -> JSONResponse:
     response = BaseResponse.error(exc.message, exc.code)
-    return JSONResponse(
-        status_code=exc.code,
-        content=response.model_dump()
-    )
+    return JSONResponse(status_code=exc.code, content=response.model_dump())
 
 
 def init_exception_handlers(app: FastAPI):
