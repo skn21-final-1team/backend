@@ -11,7 +11,6 @@ class BaseResponse(BaseModel, Generic[T]):
     data: T | None = None
     status: str = "success"
 
-    # 단순화를 위한 헬퍼 메서드
     @classmethod
     def ok(cls, data: T | None = None, message: str = "Success"):
         return cls(status="success", code=0, data=data, message=message)
