@@ -1,19 +1,26 @@
+from pydantic import BaseModel, EmailStr
+
 from crud.user import create_user, get_user_by_email
-from schemas.auth import SignupRequest
+
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
 
 
 class SignupService:
-    def signup(self, request: SignupRequest) -> dict[str, str | int] | None:
+    def signup(self, request: SignupRequest) -> bool:
         existing_user = get_user_by_email(request.email)
         if existing_user is not None:
-            return None
+            return False
 
-        new_user = create_user(
+        create_user(
             email=request.email,
             password=request.password,
             name=request.name,
         )
-        return new_user
+        return True
 
 
 signup_service = SignupService()
