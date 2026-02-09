@@ -1,31 +1,27 @@
-from fastapi import HTTPException, status
-
-from core.security import create_access_token
 from schemas.auth import LoginRequest, LoginResponse
-from services.signup import get_user_by_email
+
+from core.exceptions.user import UserNotFoundException, UserPasswordNotMatchException
+
+# DB 연결 시 삭제 예정
+DUMMY_USERS = {
+    "id": 1,
+    "email": "test@example.com",
+    "password": "password123",
+    "name": "test",
+    "created_at": "2022-01-01",
+}
 
 
 class LoginService:
-    def login(self, login_request: LoginRequest) -> LoginResponse:
-        user = get_user_by_email(login_request.email)
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password",
-            )
-        if login_request.password != user["password"]:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password",
-            )
+    def login(self, req: LoginRequest) -> LoginResponse:
+        # DB 연결 시 DUMMY_USERS를 DB에서 유저테이블로 변경, dict형태에서 table에 맞도록 수정
+        stored_password = DUMMY_USERS.get(req.email)
 
-        access_token = create_access_token(data={"user_id": user["id"], "email": str(user["email"])})
-
-        return LoginResponse(
-            message="Login successful",
-            user_email=login_request.email,
-            access_token=access_token,
-        )
+        if stored_password is None:
+            raise UserNotFoundException
+        if req.password != stored_password:
+            raise UserPasswordNotMatchException
+        return DUMMY_USERS
 
 
 login_service = LoginService()

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.route import api_router
 from core.config import get_settings
+from core.exceptions.exception_handlers import init_exception_handlers
 
 settings = get_settings()
 
@@ -23,6 +24,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.api_str)
+
+init_exception_handlers(app)
 
 
 @app.get("/")
