@@ -1,6 +1,6 @@
-from schemas.auth import LoginRequest, LoginResponse
-
 from core.exceptions.user import UserNotFoundException, UserPasswordNotMatchException
+from models.user import UserModel
+from schemas.login import LoginRequest
 
 # DB 연결 시 삭제 예정
 DUMMY_USERS = {
@@ -13,7 +13,7 @@ DUMMY_USERS = {
 
 
 class LoginService:
-    def login(self, req: LoginRequest) -> LoginResponse:
+    def login(self, req: LoginRequest) -> UserModel:
         # DB 연결 시 DUMMY_USERS를 DB에서 유저테이블로 변경, dict형태에서 table에 맞도록 수정
         stored_password = DUMMY_USERS.get(req.email)
 
