@@ -1,17 +1,17 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 
 from schemas.response import BaseResponse
-from services.signup import SignupRequest, signup_service
+from schemas.signup import SignupRequest
+from services.signup import signup_service
 
 router = APIRouter()
 
 
-@router.post("/", response_model=BaseResponse[None])
-def signup(signup_request: SignupRequest) -> BaseResponse[None]:
-    success = signup_service.signup(signup_request)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
-        )
+@router.post(
+    "/",
+    response_model=BaseResponse[None],
+    responses={409: {"model": BaseResponse}},
+)
+def signup(request: SignupRequest) -> BaseResponse[None]:
+    signup_service.signup(request)
     return BaseResponse.ok(message="Signup successful")
