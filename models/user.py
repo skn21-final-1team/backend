@@ -1,6 +1,7 @@
-from core.database import Base  # DB 연결 설정에서 만든 Base 클래스
 from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.sql import func
+
+from db.database import Base
 
 
 class UserModel(Base):
