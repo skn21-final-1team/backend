@@ -10,7 +10,6 @@ class BaseResponse(BaseModel, Generic[T]):
     message: str
     data: T | None = None
 
-    # 단순화를 위한 헬퍼 메서드
     @classmethod
     def ok(cls, data: T | None = None, message: str = "Success"):
         return cls(code=0, data=data, message=message)
