@@ -1,27 +1,21 @@
+from sqlalchemy.orm import Session
+
 from core.exceptions.user import UserNotFoundException, UserPasswordNotMatchException
+from core.security import verify_password
+from crud.user import get_user_by_email
 from models.user import UserModel
 from schemas.login import LoginRequest
 
-# DB 연결 시 삭제 예정
-DUMMY_USERS = {
-    "id": 1,
-    "email": "test@example.com",
-    "password": "password123",
-    "name": "test",
-    "created_at": "2022-01-01",
-}
-
 
 class LoginService:
-    def login(self, req: LoginRequest) -> UserModel:
-        # DB 연결 시 DUMMY_USERS를 DB에서 유저테이블로 변경, dict형태에서 table에 맞도록 수정
-        stored_password = DUMMY_USERS.get(req.email)
+    def login(self, req: LoginRequest, db: Session) -> UserModel:
+        user = get_user_by_email(db, req.email)
 
-        if stored_password is None:
+        if not user:
             raise UserNotFoundException
-        if req.password != stored_password:
+        if not verify_password(req.password, user.password):
             raise UserPasswordNotMatchException
-        return DUMMY_USERS
+        return user
 
 
 login_service = LoginService()

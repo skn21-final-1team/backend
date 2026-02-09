@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from db.database import DbSession
 from schemas.response import BaseResponse
 from schemas.signup import SignupRequest
 from services.signup import signup_service
@@ -12,6 +13,6 @@ router = APIRouter()
     response_model=BaseResponse[None],
     responses={409: {"model": BaseResponse}},
 )
-def signup(request: SignupRequest) -> BaseResponse[None]:
-    signup_service.signup(request)
+def signup(request: SignupRequest, db: DbSession) -> BaseResponse[None]:
+    signup_service.signup(request, db)
     return BaseResponse.ok(message="Signup successful")

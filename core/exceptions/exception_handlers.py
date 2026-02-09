@@ -6,11 +6,11 @@ from core.exceptions.user import UserAlreadyExistsException, UserNotFoundExcepti
 from schemas.response import BaseResponse
 
 
-async def custom_base_handler(request: Request, exc: CustomException):
-    content = BaseResponse.error(message=exc.message, code=exc.code).model_dump()
+def custom_base_handler(request: Request, exc: CustomException) -> JSONResponse:
+    response = BaseResponse.error(exc.message, exc.code)
     return JSONResponse(
         status_code=exc.code,
-        content=content,
+        content=response.model_dump()
     )
 
 
