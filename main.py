@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.route import api_router
 from core.config import get_settings
 from core.exceptions.exception_handlers import init_exception_handlers
+from db.database import Base, engine
+
+Base.metadata.create_all(bind=engine)
 
 settings = get_settings()
 
