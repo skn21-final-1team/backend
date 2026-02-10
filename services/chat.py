@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
 
 from core.exceptions.chat import ChatNotFoundException
-from crud.chat import get_chat_by_id
-from models.chat import Chat
+from models.chat import ChatModel
+from models.notebook import NotebookModel
+
+from crud.chat import get_chat_by_chat_id
 from schemas.chat import ChatRequest
 
 class ChatService:
