@@ -1,13 +1,5 @@
 from pydantic import BaseModel, Field
-
 from datetime import datetime
-
-class NotebookRequest(BaseModel):
-    title: str = Field(..., description="노트북 제목", examples=["노트북 1"])
-
-class NotebookResponse(BaseModel):
-    id: int
-    title: str 
 
 class ChatRequest(BaseModel):
     role: str = Field(..., description="채팅 역할", examples=["user"])
