@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
 
+    postgres_server: str = Field(default="localhost", alias="POSTGRES_SERVER")
+    postgres_user: str = Field(default="postgres", alias="POSTGRES_USER")
+    postgres_password: str = Field(default="postgres", alias="POSTGRES_PASSWORD")
+    postgres_db: str = Field(default="app", alias="POSTGRES_DB")
+    postgres_port: int = Field(default=5432, alias="POSTGRES_PORT")
+
 
 @lru_cache
 def get_settings() -> Settings:
