@@ -1,0 +1,65 @@
+services:
+  redis:
+    image: redis:alpine
+    command: redis-server --bind 0.0.0.0 --save 60 1 --loglevel warning
+    networks:
+      - firecrawl-net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  playwright-service:
+    image: trieve/puppeteer-service-ts:v0.0.6
+    environment:
+      - PORT=3000
+      - MAX_CONCURRENCY=10
+    networks:
+      - firecrawl-net
+
+  firecrawl-api:
+    image: trieve/firecrawl:v0.0.46
+    ports:
+      - "${FIRECRAWL_PORT:-3002}:3002"
+    environment:
+      - PORT=3002
+      - HOST=0.0.0.0
+      - USE_DB_AUTHENTICATION=false
+      - REDIS_URL=redis://redis:6379
+      - REDIS_RATE_LIMIT_URL=redis://redis:6379
+      - PLAYWRIGHT_MICROSERVICE_URL=http://playwright-service:3000
+      - NUM_WORKERS_PER_QUEUE=8
+      - COREPACK_INTEGRITY_KEYS=0
+    depends_on:
+      redis:
+        condition: service_healthy
+      playwright-service:
+        condition: service_started
+    command: [ "pnpm", "run", "start:production" ]
+    networks:
+      - firecrawl-net
+
+  firecrawl-worker:
+    image: trieve/firecrawl:v0.0.46
+    environment:
+      - PORT=3002
+      - HOST=0.0.0.0
+      - USE_DB_AUTHENTICATION=false
+      - REDIS_URL=redis://redis:6379
+      - REDIS_RATE_LIMIT_URL=redis://redis:6379
+      - PLAYWRIGHT_MICROSERVICE_URL=http://playwright-service:3000
+      - NUM_WORKERS_PER_QUEUE=8
+      - COREPACK_INTEGRITY_KEYS=0
+    depends_on:
+      redis:
+        condition: service_healthy
+      firecrawl-api:
+        condition: service_started
+    command: [ "pnpm", "run", "workers" ]
+    networks:
+      - firecrawl-net
+
+networks:
+  firecrawl-net:
+    driver: bridge

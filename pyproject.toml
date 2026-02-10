@@ -16,6 +16,7 @@ dependencies = [
     "psycopg2-binary>=2.9.11",
     "passlib[bcrypt]>=1.7.4",
     "httpx>=0.28.1",
+    "trafilatura>=2.0.0",
 ]
 
 [project.optional-dependencies]
