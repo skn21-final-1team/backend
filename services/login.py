@@ -12,9 +12,9 @@ class LoginService:
         user = get_user_by_email(db, req.email)
 
         if not user:
-            raise UserNotFoundException()
+            raise UserNotFoundException
         if not verify_password(req.password, user.password):
-            raise UserPasswordNotMatchException()
+            raise UserPasswordNotMatchException
         return user
 
 

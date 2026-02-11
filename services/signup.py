@@ -8,7 +8,7 @@ from schemas.signup import SignupRequest
 class SignupService:
     def signup(self, request: SignupRequest, db: Session) -> None:
         if get_user_by_email(db, request.email):
-            raise UserAlreadyExistsException()
+            raise UserAlreadyExistsException
         create_user(db, request.email, request.password, request.name)
 
 

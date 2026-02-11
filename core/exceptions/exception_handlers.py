@@ -18,12 +18,12 @@ from core.exceptions.user import UserAlreadyExistsException, UserNotFoundExcepti
 from schemas.response import BaseResponse
 
 
-def custom_base_handler(request: Request, exc: CustomException) -> JSONResponse:
+def custom_base_handler(_: Request, exc: CustomException) -> JSONResponse:
     response = BaseResponse.error(message=exc.message, code=exc.code)
     return JSONResponse(status_code=exc.code, content=response.model_dump())
 
 
-def validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+def validation_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
     errors = exc.errors()
     messages = [f"{'.'.join(str(loc) for loc in e['loc'])}: {e['msg']}" for e in errors]
     response = BaseResponse.error(message="; ".join(messages), code=422)
