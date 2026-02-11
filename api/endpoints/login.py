@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/",
+    "",
     response_model=BaseResponse[LoginResponse],
     responses={404: {"model": BaseResponse}, 401: {"model": BaseResponse}},
 )

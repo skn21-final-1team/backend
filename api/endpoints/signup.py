@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/",
+    "",
     response_model=BaseResponse[None],
     responses={409: {"model": BaseResponse}},
 )

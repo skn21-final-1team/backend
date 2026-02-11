@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/",
+    "",
     response_model=BaseResponse[list[SourceResponse]],
     responses={502: {"model": BaseResponse}, 503: {"model": BaseResponse}},
 )

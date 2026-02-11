@@ -3,7 +3,6 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - dev
       - devops
 
 jobs:
@@ -69,7 +68,7 @@ jobs:
             -d '{"query": "mutation { podStop(input: {podId: \"${{ secrets.RUNPOD_POD_ID }}\"}) { id } }"}'
 
       - name: Wait for Pod to stop
-        run: sleep 20
+        run: sleep 5
 
       - name: Start RunPod Pod with latest image
         run: |

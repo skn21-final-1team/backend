@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/",
+    "",
     response_model=BaseResponse[NotebookResponse],
     responses={404: {"model": BaseResponse}, 401: {"model": BaseResponse}},
 )
@@ -18,7 +18,7 @@ def create_notebook(req: NotebookRequest, db: DbSession, user_id: int = Query(..
 
 
 @router.get(
-    "/",
+    "",
     response_model=BaseResponse[list[NotebookResponse]],
     responses={404: {"model": BaseResponse}},
 )

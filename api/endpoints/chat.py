@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/",
+    "",
     response_model=BaseResponse[ChatResponse],
     responses={404: {"model": BaseResponse}, 401: {"model": BaseResponse}},
 )
