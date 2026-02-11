@@ -22,10 +22,14 @@ COPY . /app
 RUN apk add --no-cache openssh-server bash && \
     mkdir -p /run/sshd /root/.ssh && \
     chmod 700 /root/.ssh && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
-    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
-    ssh-keygen -A
+    ssh-keygen -A && \
+    echo "PermitRootLogin prohibit-password" >> /etc/ssh/sshd_config && \
+    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "PasswordAuthentication no" >> /etc/ssh/sshd_config && \
+    echo "AuthorizedKeysFile /root/.ssh/authorized_keys" >> /etc/ssh/sshd_config
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -33,4 +37,4 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 80 22
 
-CMD sh -c "echo \"$SSH_PUBLIC_KEY\" > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys && /usr/sbin/sshd && uvicorn main:app --host 0.0.0.0 --port 80"
+CMD ["/entrypoint.sh"]
