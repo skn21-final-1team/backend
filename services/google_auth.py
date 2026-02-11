@@ -8,7 +8,7 @@ from core.exceptions.auth import (
     OAuthAccountConflictException,
 )
 from crud.user import create_oauth_user, get_user_by_email
-from models.user import UserModel
+from models.users import UserModel
 
 settings = get_settings()
 

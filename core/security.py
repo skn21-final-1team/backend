@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 
 from core.config import get_settings
 from db.database import DbSession
-from models.user import UserModel
+from models.users import UserModel
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security_scheme = HTTPBearer()
