@@ -1,5 +1,6 @@
 from core.exceptions.base import CustomException
 
+
 class ChatNotFoundException(CustomException):
     """채팅을 찾을 수 없을 때 발생"""
 

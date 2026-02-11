@@ -7,6 +7,7 @@ from services.chat import chat_service
 
 router = APIRouter()
 
+
 @router.post(
     "/",
     response_model=BaseResponse[ChatResponse],
@@ -15,6 +16,7 @@ router = APIRouter()
 def create_chat(req: ChatRequest, db: DbSession) -> BaseResponse[ChatResponse]:
     return BaseResponse.ok(chat_service.create_chat(req.notebook_id, req.role, req.message, db))
 
+
 @router.get(
     "/{chat_id}",
     response_model=BaseResponse[ChatResponse],
@@ -22,6 +24,7 @@ def create_chat(req: ChatRequest, db: DbSession) -> BaseResponse[ChatResponse]:
 )
 def get_chat(chat_id: int, db: DbSession) -> BaseResponse[ChatResponse]:
     return BaseResponse.ok(chat_service.get_chat(chat_id, db))
+
 
 @router.get(
     "/notebook/{notebook_id}",

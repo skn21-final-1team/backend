@@ -32,8 +32,7 @@ class DockerComposeManager:
         settings = get_crawl_settings()
         result = await asyncio.to_thread(
             subprocess.run,
-            ["docker", "compose", "-f", settings.firecrawl_compose_path,
-             "-p", "firecrawl", *args],
+            ["docker", "compose", "-f", settings.firecrawl_compose_path, "-p", "firecrawl", *args],
             capture_output=True,
         )
         if result.returncode != 0:

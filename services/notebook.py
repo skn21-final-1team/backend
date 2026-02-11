@@ -9,6 +9,7 @@ from crud.notebook import (
 )
 from models.notebook import NotebookModel
 
+
 class NotebookService:
     def get_notebook(self, notebook_id: int, db: Session) -> NotebookModel:
         notebook = get_notebook(db, notebook_id)
@@ -20,7 +21,7 @@ class NotebookService:
         return get_notebooks_by_user_id(db, user_id)
 
     def create_notebook(self, user_id: int, title: str, db: Session) -> NotebookModel:
-        return create_notebook(db, user_id, title) 
+        return create_notebook(db, user_id, title)
 
     def update_notebook_title(self, notebook_id: int, title: str, db: Session) -> NotebookModel:
         notebook = update_notebook_title(db, notebook_id, title)
@@ -33,5 +34,6 @@ class NotebookService:
         if not notebook:
             raise NotebookNotFoundException()
         return notebook
+
 
 notebook_service = NotebookService()

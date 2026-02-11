@@ -1,5 +1,6 @@
 from core.exceptions.base import CustomException
 
+
 class NotebookNotFoundException(CustomException):
     """노트북을 찾을 수 없을 때 발생"""
 
