@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from core.exceptions.base import CustomException
@@ -11,7 +12,15 @@ def custom_base_handler(request: Request, exc: CustomException) -> JSONResponse:
     return JSONResponse(status_code=exc.code, content=response.model_dump())
 
 
+def validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    errors = exc.errors()
+    messages = [f"{'.'.join(str(loc) for loc in e['loc'])}: {e['msg']}" for e in errors]
+    response = BaseResponse.error(message="; ".join(messages), code=422)
+    return JSONResponse(status_code=422, content=response.model_dump())
+
+
 def init_exception_handlers(app: FastAPI):
+    app.add_exception_handler(RequestValidationError, validation_handler)
     app.add_exception_handler(CustomException, custom_base_handler)
     app.add_exception_handler(UserNotFoundException, custom_base_handler)
     app.add_exception_handler(UserPasswordNotMatchException, custom_base_handler)
