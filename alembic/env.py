@@ -1,16 +1,13 @@
-import os
-
-import dotenv
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from core.config import get_settings
 from models import Base
-
-dotenv.load_dotenv()
 
 config = context.config
 
-config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL", ""))
+url = get_settings().database_url
+config.set_main_option("sqlalchemy.url", url)
 
 
 target_metadata = Base.metadata

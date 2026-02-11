@@ -1,17 +1,15 @@
-import os
 from typing import Annotated
 
-import dotenv
 from fastapi import Depends
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
-dotenv.load_dotenv()
+from core.config import get_settings
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+setting = get_settings()
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(setting.database_url)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
