@@ -19,10 +19,16 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 COPY . /app
 
+ARG SSH_PUBLIC_KEY=""
+
 RUN apk add --no-cache openssh-server bash && \
-    mkdir -p /run/sshd && \
-    echo 'root:root' | chpasswd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    mkdir -p /run/sshd /root/.ssh && \
+    chmod 700 /root/.ssh && \
+    echo "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys && \
+    chmod 600 /root/.ssh/authorized_keys && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
+    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
     ssh-keygen -A
 
 ENV PATH="/app/.venv/bin:$PATH"

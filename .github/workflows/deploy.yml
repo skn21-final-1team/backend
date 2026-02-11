@@ -54,6 +54,8 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/terabyte:skn21-final-dev-backend
+          build-args: |
+            SSH_PUBLIC_KEY=${{ secrets.SSH_PUBLIC_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -61,21 +63,19 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to RunPod via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.RUNPOD_HOST }}
-          port: ${{ secrets.RUNPOD_SSH_PORT }}
-          username: root
-          password: ${{ secrets.RUNPOD_SSH_PASSWORD }}
-          script: |
-            docker pull ${{ secrets.DOCKER_USERNAME }}/terabyte:skn21-final-dev-backend
-            docker stop fastapi-backend || true
-            docker rm fastapi-backend || true
-            docker run -d \
-              --name fastapi-backend \
-              -p 80:80 \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              ${{ secrets.DOCKER_USERNAME }}/terabyte:skn21-final-dev-backend
+      - name: Stop RunPod Pod
+        run: |
+          curl -s -X POST https://api.runpod.io/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RUNPOD_API_KEY }}" \
+            -d '{"query": "mutation { podStop(input: {podId: \"${{ secrets.RUNPOD_POD_ID }}\"}) { id status } }"}'
 
-              
+      - name: Wait for Pod to stop
+        run: sleep 10
+
+      - name: Start RunPod Pod with latest image
+        run: |
+          curl -s -X POST https://api.runpod.io/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RUNPOD_API_KEY }}" \
+            -d '{"query": "mutation { podResume(input: {podId: \"${{ secrets.RUNPOD_POD_ID }}\"}) { id status } }"}'
