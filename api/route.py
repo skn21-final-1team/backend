@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from .endpoints import auth, chat, crawl, health, login, notebook, signup
 
-api_router = APIRouter()
+api_router = APIRouter(redirect_slashes=False)
 
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(login.router, prefix="/login", tags=["auth"])
