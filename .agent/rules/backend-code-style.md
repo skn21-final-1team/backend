@@ -54,3 +54,27 @@ depth가 깊게 코딩하지 마세요. 깊이는 최소한으로 합니다.
 ## 3. Dependency & Package Management
 - 모든 의존성 관리는 `pyproject.toml`을 기준으로 하며, 패키지 추가 시 반드시 `uv add`를 사용합니다.
 - 패키지 조작 후에는 항상 `uv.lock` 파일이 업데이트되었는지 확인하여 환경 일관성을 유지합니다.
+
+## 4. 레이어 책임 분리
+- `services/`는 비즈니스 로직만 담당하며, **모델 또는 원시 데이터(str, tuple 등)**만 반환합니다.
+- **응답 스키마(Pydantic DTO) 구성은 반드시 `api/endpoints/`에서** 수행합니다.
+- 서비스가 응답 스키마를 직접 import하거나 생성하지 않습니다.
+
+```python
+# ✅ 올바른 패턴: 서비스는 원시 데이터 반환
+class AuthService:
+    def create_tokens(self, user: UserModel, db: Session) -> tuple[str, str]:
+        return access_token, refresh_token
+
+# ✅ 올바른 패턴: 엔드포인트에서 응답 스키마 구성
+def login(req: LoginRequest, db: DbSession, response: Response) -> BaseResponse[LoginResponse]:
+    user = login_service.login(req, db)
+    access_token, refresh_token = auth_service.create_tokens(user, db)
+    login_response = LoginResponse(access_token=access_token, user=UserInfoResponse(...))
+    return BaseResponse.ok(data=login_response)
+
+# ❌ 잘못된 패턴: 서비스에서 응답 스키마 생성
+class AuthService:
+    def create_tokens(self, user: UserModel, db: Session) -> LoginResponse:
+        return LoginResponse(access_token=access_token, user=UserInfoResponse(...))
+```
