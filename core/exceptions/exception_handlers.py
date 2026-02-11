@@ -2,6 +2,14 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from core.exceptions.auth import (
+    ExpiredRefreshTokenException,
+    GoogleClientIdMismatchException,
+    InvalidGoogleTokenException,
+    InvalidRefreshTokenException,
+    InvalidTokenException,
+    OAuthAccountConflictException,
+)
 from core.exceptions.base import CustomException
 from core.exceptions.user import UserAlreadyExistsException, UserNotFoundException, UserPasswordNotMatchException
 from schemas.response import BaseResponse
@@ -25,3 +33,9 @@ def init_exception_handlers(app: FastAPI):
     app.add_exception_handler(UserNotFoundException, custom_base_handler)
     app.add_exception_handler(UserPasswordNotMatchException, custom_base_handler)
     app.add_exception_handler(UserAlreadyExistsException, custom_base_handler)
+    app.add_exception_handler(InvalidTokenException, custom_base_handler)
+    app.add_exception_handler(ExpiredRefreshTokenException, custom_base_handler)
+    app.add_exception_handler(InvalidRefreshTokenException, custom_base_handler)
+    app.add_exception_handler(InvalidGoogleTokenException, custom_base_handler)
+    app.add_exception_handler(GoogleClientIdMismatchException, custom_base_handler)
+    app.add_exception_handler(OAuthAccountConflictException, custom_base_handler)
