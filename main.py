@@ -19,6 +19,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title=settings.app_name,
     debug=settings.debug,
+    redirect_slashes=False,
     openapi_url=f"{settings.api_str}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",

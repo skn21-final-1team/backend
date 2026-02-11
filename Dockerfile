@@ -19,13 +19,9 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 COPY . /app
 
-ARG SSH_PUBLIC_KEY=""
-
 RUN apk add --no-cache openssh-server bash && \
     mkdir -p /run/sshd /root/.ssh && \
     chmod 700 /root/.ssh && \
-    echo "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys && \
-    chmod 600 /root/.ssh/authorized_keys && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
@@ -37,4 +33,4 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 80 22
 
-CMD sh -c "/usr/sbin/sshd && uvicorn main:app --host 0.0.0.0 --port 80"
+CMD sh -c "echo \"$SSH_PUBLIC_KEY\" > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys && /usr/sbin/sshd && uvicorn main:app --host 0.0.0.0 --port 80"
