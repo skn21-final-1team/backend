@@ -56,3 +56,26 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/terabyte:skn21-final-dev-backend
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to RunPod via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.RUNPOD_HOST }}
+          port: ${{ secrets.RUNPOD_SSH_PORT }}
+          username: root
+          password: ${{ secrets.RUNPOD_SSH_PASSWORD }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/terabyte:skn21-final-dev-backend
+            docker stop fastapi-backend || true
+            docker rm fastapi-backend || true
+            docker run -d \
+              --name fastapi-backend \
+              -p 80:80 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              ${{ secrets.DOCKER_USERNAME }}/terabyte:skn21-final-dev-backend
+
+              
