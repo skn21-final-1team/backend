@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - devops
 
 jobs:
   lint-and-format:
