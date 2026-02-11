@@ -78,4 +78,4 @@ jobs:
           curl -s -X POST https://api.runpod.io/graphql \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.RUNPOD_API_KEY }}" \
-            -d '{"query": "mutation { podResume(input: {podId: \"${{ secrets.RUNPOD_POD_ID }}\"}) { id status } }"}'
+            -d '{"query": "mutation { podResume(input: {podId: \"${{ secrets.RUNPOD_POD_ID }}\"}) { id } }"}'
