@@ -3,8 +3,8 @@
 
 # tmux attach -t myserver
 
-echo "change directory to backend"
-cd workspace
+echo "가상환경 실행 중..."
+source ./venv/bin/activate
 
 echo "기존 서버 종료 중..."
 tmux kill-session -t myserver
