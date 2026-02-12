@@ -14,7 +14,8 @@ echo "Git Change 진행 중..."
 git switch devops
 
 echo "Git Pull 진행 중..."
-git pull
+git fetch origin devops
+git reset --hard origin/devops
 
 echo "서버 재실행 중..."
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
