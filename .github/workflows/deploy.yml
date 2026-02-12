@@ -39,5 +39,6 @@ jobs:
           key: ${{ secrets.DEV_SSH_KEY }}
           port: ${{ secrets.DEV_SSH_PORT }}
           script: |
-            chmod +x ~/dev-deploy.sh
-            ~/dev-deploy.sh
+            cd workspace
+            chmod +x ./dev-deploy.sh
+            ./dev-deploy.sh
