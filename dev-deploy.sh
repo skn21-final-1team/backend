@@ -3,12 +3,13 @@
 
 # tmux attach -t myserver
 
-echo "가상환경 실행 중..."
-source ./venv/bin/activate
 
 echo "기존 서버 종료 중..."
 tmux kill-session -t myserver
 tmux new -s myserver
+
+echo "가상환경 실행 중..."
+source ./venv/bin/activate
 
 echo "Git Change 진행 중..."
 git switch devops
