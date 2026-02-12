@@ -31,7 +31,7 @@ class GoogleAuthService:
         return user
 
     def _verify_google_token(self, id_token: str) -> dict[str, str]:
-        response = httpx.get(GOOGLE_TOKENINFO_URL, params={"id_token": id_token})
+        response = httpx.get(GOOGLE_TOKENINFO_URL, params={"access_token": id_token})
 
         if not response.is_success:
             raise InvalidGoogleTokenException
