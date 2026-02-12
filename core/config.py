@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     database_url: str = Field(default="", alias="DATABASE_URL")
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
 
 
 @lru_cache
