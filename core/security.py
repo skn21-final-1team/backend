@@ -77,3 +77,38 @@ def get_current_user(
 
 
 CurrentUser = Annotated[UserModel, Depends(get_current_user)]
+
+
+def create_notebook_key(notebook_id: int, user_id: int) -> str:
+    expire = datetime.now(UTC) + timedelta(minutes=5)
+    to_encode = {
+        "exp": expire,
+        "type": "notebook_key",
+        "notebook_id": notebook_id,
+        "sub": str(user_id),
+    }
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
+
+
+def get_current_notebook_id(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security_scheme)],
+) -> int:
+    payload = decode_token(credentials.credentials)
+
+    if payload.get("type") != "notebook_key":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Notebook Key가 아닙니다.",
+        )
+
+    notebook_id = payload.get("notebook_id")
+    if notebook_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="잘못된 토큰입니다 (notebook_id 없음).",
+        )
+
+    return int(notebook_id)
+
+
+NotebookId = Annotated[int, Depends(get_current_notebook_id)]

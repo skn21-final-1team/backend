@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 
 from db.database import Base
 
@@ -13,3 +14,6 @@ class SourceModel(Base):
     notebook_id = Column(Integer, ForeignKey("notebook.id"), nullable=True)
     directory_id = Column(Integer, ForeignKey("directory.id"), nullable=True)
     is_active = Column(Boolean, default=False)
+
+    notebook = relationship("NotebookModel", back_populates="sources")
+    directory = relationship("DirectoryModel", back_populates="sources")
