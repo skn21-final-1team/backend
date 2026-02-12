@@ -9,7 +9,7 @@ tmux kill-session -t myserver
 tmux new -s myserver
 
 echo "가상환경 실행 중..."
-source ./venv/bin/activate
+source .venv/bin/activate
 
 echo "Git Change 진행 중..."
 git switch devops
