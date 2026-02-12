@@ -6,6 +6,17 @@ on:
       - devops
 
 jobs:
+  notify-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start Notification
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "배포 시작"
+          description: "🟡 RunPod 서버로 배포를 시작합니다..."
+          color: 0xffff00
+
   lint-and-format:
     runs-on: ubuntu-latest
     steps:
@@ -44,3 +55,12 @@ jobs:
             git reset --hard origin/devops
             chmod +x ./dev-deploy.sh
             ./dev-deploy.sh
+      - name: Finish Notification
+        uses: sarisia/actions-status-discord@v1
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: ${{ job.status }}
+          title: "배포 완료"
+          description: "🟢 RunPod 서버로 배포를 완료했습니다...."
+          color: 0x00ff00
