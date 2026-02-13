@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Response
 
+from core.security import CurrentUser
 from db.database import DbSession
 from schemas.auth import GoogleLoginRequest, LoginResponse, RefreshTokenRequest, TokenResponse, UserInfoResponse
 from schemas.response import BaseResponse
@@ -38,7 +39,3 @@ def google_login(req: GoogleLoginRequest, db: DbSession, response: Response) -> 
 )
 def refresh_token(req: RefreshTokenRequest, db: DbSession, response: Response) -> BaseResponse[TokenResponse]:
     new_access_token, new_refresh_token = auth_service.refresh_access_token(req.refresh_token, db)
-
-    response.headers["X-Refresh-Token"] = new_refresh_token
-    token_response = TokenResponse(access_token=new_access_token)
-    return BaseResponse.ok(data=token_response, message="토큰 갱신 성공")

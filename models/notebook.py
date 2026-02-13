@@ -12,5 +12,4 @@ class NotebookModel(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    directories = relationship("DirectoryModel", back_populates="notebook", cascade="all, delete-orphan")
     sources = relationship("SourceModel", back_populates="notebook", cascade="all, delete-orphan")

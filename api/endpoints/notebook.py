@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
-from core.security import CurrentUser, create_notebook_key
+from core.security import CurrentUser, create_extension_token
 from db.database import DbSession
-from schemas.notebook import NotebookKeyResponse, NotebookRequest, NotebookResponse
+from schemas.notebook import ExtensionTokenResponse, NotebookRequest, NotebookResponse
 from schemas.response import BaseResponse
 from services.notebook import notebook_service
 
@@ -12,25 +12,25 @@ router = APIRouter()
 @router.post(
     "/",
     response_model=BaseResponse[NotebookResponse],
-    responses={404: {"model": BaseResponse}, 401: {"model": BaseResponse}},
+    responses={500: {"model": BaseResponse}},
 )
 def create_notebook(req: NotebookRequest, db: DbSession, user: CurrentUser) -> BaseResponse[NotebookResponse]:
     return BaseResponse.ok(notebook_service.create_notebook(user.id, req.title, db))
 
 
 @router.post(
-    "/{notebook_id}/generate-key",
-    response_model=BaseResponse[NotebookKeyResponse],
+    "/{notebook_id}/extension-token",
+    response_model=BaseResponse[ExtensionTokenResponse],
     responses={404: {"model": BaseResponse}, 403: {"model": BaseResponse}},
 )
-def generate_notebook_key(notebook_id: int, db: DbSession, user: CurrentUser) -> BaseResponse[NotebookKeyResponse]:
+def generate_extension_token(notebook_id: int, db: DbSession, user: CurrentUser) -> BaseResponse[ExtensionTokenResponse]:
     notebook = notebook_service.get_notebook(notebook_id, db)
     
     if notebook.user_id != user.id:
          return BaseResponse.error(message="권한이 없습니다.", code=403)
 
-    key = create_notebook_key(notebook_id, user.id)
-    return BaseResponse.ok(NotebookKeyResponse(key=key))
+    token = create_extension_token(notebook_id, user.id)
+    return BaseResponse.ok(ExtensionTokenResponse(token=token))
 
 
 @router.get(

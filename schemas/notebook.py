@@ -10,5 +10,5 @@ class NotebookResponse(BaseModel):
     title: str
 
 
-class NotebookKeyResponse(BaseModel):
-    key: str
+class ExtensionTokenResponse(BaseModel):
+    token: str

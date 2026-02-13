@@ -76,14 +76,11 @@ def get_current_user(
     return user
 
 
-CurrentUser = Annotated[UserModel, Depends(get_current_user)]
-
-
-def create_notebook_key(notebook_id: int, user_id: int) -> str:
-    expire = datetime.now(UTC) + timedelta(minutes=5)
+def create_extension_token(notebook_id: int, user_id: int) -> str:
+    expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode = {
         "exp": expire,
-        "type": "notebook_key",
+        "type": "extension_token",
         "notebook_id": notebook_id,
         "sub": str(user_id),
     }
@@ -93,22 +90,19 @@ def create_notebook_key(notebook_id: int, user_id: int) -> str:
 def get_current_notebook_id(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security_scheme)],
 ) -> int:
-    payload = decode_token(credentials.credentials)
-
-    if payload.get("type") != "notebook_key":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Notebook Key가 아닙니다.",
-        )
-
-    notebook_id = payload.get("notebook_id")
-    if notebook_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="잘못된 토큰입니다 (notebook_id 없음).",
-        )
-
-    return int(notebook_id)
+    try:
+        payload = decode_token(credentials.credentials)
+        if payload.get("type") != "extension_token":
+            raise HTTPException(status_code=401, detail="Extension Token이 아닙니다.")
+        
+        notebook_id = payload.get("notebook_id")
+        if not notebook_id:
+            raise HTTPException(status_code=401, detail="Notebook ID가 없습니다.")
+            
+        return int(notebook_id)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="토큰이 유효하지 않습니다.")
 
 
+CurrentUser = Annotated[UserModel, Depends(get_current_user)]
 NotebookId = Annotated[int, Depends(get_current_notebook_id)]

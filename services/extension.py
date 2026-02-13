@@ -1,30 +1,30 @@
 from sqlalchemy.orm import Session
-
-from crud.directory import create_directory
 from crud.source import create_source
-from schemas.extension import BookmarkFolder
+from models.directory import DirectoryModel
+from schemas.extension import ExtensionBookmarkNode
 
 
 class ExtensionService:
-    def process_bulk_import(self, db: Session, notebook_id: int, folders: list[BookmarkFolder]):
-        for folder in folders:
-            self._process_folder(db, notebook_id, folder, None)
+    def process_extension_data(self, notebook_id: int, nodes: list[ExtensionBookmarkNode], db: Session):
+        for node in nodes:
+            self._save_node(notebook_id, node, None, db)
 
-    def _process_folder(self, db: Session, notebook_id: int, folder: BookmarkFolder, parent_id: int | None):
-        db_directory = create_directory(db, notebook_id, folder.name, parent_id)
+    def _save_node(self, notebook_id: int, node: ExtensionBookmarkNode, parent_id: int | None, db: Session):
+        if not node.url:
+            directory = DirectoryModel(name=node.title, notebook_id=notebook_id, parent_id=parent_id)
+            db.add(directory)
+            db.commit()
+            db.refresh(directory)
+            for child in node.children:
+                self._save_node(notebook_id, child, directory.id, db)
         
-        for url_item in folder.urls:
+        else:
             create_source(
                 db, 
-                url=url_item.url, 
-                title=url_item.title, 
-                summary=None,
-                directory_id=db_directory.id,
-                notebook_id=notebook_id
+                url=node.url, 
+                title=node.title, 
+                notebook_id=notebook_id, 
+                directory_id=parent_id
             )
-
-        for sub_folder in folder.folders:
-            self._process_folder(db, notebook_id, sub_folder, db_directory.id)
-
 
 extension_service = ExtensionService()

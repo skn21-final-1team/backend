@@ -1,18 +1,12 @@
-from __future__ import annotations
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
-class BookmarkUrl(BaseModel):
+class ExtensionBookmarkNode(BaseModel):
+    id: str
     title: str
-    url: str
+    url: str | None = None
+    children: list["ExtensionBookmarkNode"] = []
 
 
-class BookmarkFolder(BaseModel):
-    name: str = Field(alias="title")
-    folders: list[BookmarkFolder] = []
-    urls: list[BookmarkUrl] = []
-
-
-class ExtensionBulkRequest(BaseModel):
-    folders: list[BookmarkFolder]
+class ExtensionUploadRequest(BaseModel):
+    bookmarks: list[ExtensionBookmarkNode]

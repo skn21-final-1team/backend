@@ -23,7 +23,12 @@ class Settings(BaseSettings):
     database_url: str = Field(default="", alias="DATABASE_URL")
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
 
-    backend_cors_origins: list[str] = Field(default=["http://localhost:3000"], alias="BACKEND_CORS_ORIGINS")
+    backend_cors_origins: list[str] = Field(
+        default=[
+            "http://localhost:3000",
+        ],
+        alias="BACKEND_CORS_ORIGINS"
+    )
 
 
 @lru_cache
