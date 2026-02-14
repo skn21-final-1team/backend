@@ -29,7 +29,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if self._is_exempt_path(request.url.path):
             return await call_next(request)
 
-        if self._is_public_route(request):
+        if self._should_skip_auth(request):
             return await call_next(request)
 
         token = self._extract_token(request)
@@ -46,13 +46,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
     def _is_exempt_path(self, path: str) -> bool:
         return path in self.EXEMPT_PATHS
 
-    def _is_public_route(self, request: Request) -> bool:
+    def _should_skip_auth(self, request: Request) -> bool:
         for route in request.app.routes:
             if isinstance(route, APIRoute):
                 match, _ = route.matches(request.scope)
                 if match == Match.FULL:
                     return getattr(route.endpoint, "_is_public", False)
-        return False
+        return True
 
     def _extract_token(self, request: Request) -> str | None:
         auth_header = request.headers.get("Authorization")
