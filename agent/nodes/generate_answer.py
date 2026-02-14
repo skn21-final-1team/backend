@@ -23,13 +23,9 @@ def generate_answer(state: QAState) -> dict[str, str]:
     Returns:
         answer 키를 포함한 딕셔너리
     """
-    print(f"[generate_answer] 질문: {state['question']}")
     chat_history_text = format_chat_history(state.get("chat_history", []))
 
     sources_text = "\n\n---\n\n".join(state.get("sources", []))
-    if not sources_text:
-        print("[generate_answer] 소스 자료 없음 → 기본 응답 반환")
-        return {"answer": "질문에 대한 소스 자료가 없습니다."}
 
     messages = [
         SystemMessage(content=QA_SYSTEM_PROMPT),
@@ -57,7 +53,5 @@ def generate_casual_answer(state: QAState) -> dict[str, str]:
     """
     messages = [SystemMessage(content=CASUAL_SYSTEM_PROMPT.format(question=state["question"]))]
 
-    print(f"[generate_casual_answer] 질문: {state['question']}")
-    response = llm.invoke(messages)
-    print(f"[generate_casual_answer] 답변 생성 완료 (길이: {len(response.content)})")
+    response = await llm.ainvoke(messages)
     return {"answer": response.content}
