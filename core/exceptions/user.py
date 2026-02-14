@@ -20,3 +20,10 @@ class UserAlreadyExistsException(CustomException):
 
     def __init__(self):
         super().__init__("이미 존재하는 사용자입니다.", code=409)
+
+
+class InvalidUserException(CustomException):
+    """유저 정보가 유효하지 않을 때 발생"""
+
+    def __init__(self):
+        super().__init__("유저 정보가 유효하지 않습니다.", code=401)

@@ -14,7 +14,12 @@ from core.exceptions.base import CustomException
 from core.exceptions.chat import ChatNotFoundException
 from core.exceptions.crawl import CrawlFailedException, FirecrawlConnectionException, FirecrawlContainerException
 from core.exceptions.notebook import NotebookNotFoundException
-from core.exceptions.user import UserAlreadyExistsException, UserNotFoundException, UserPasswordNotMatchException
+from core.exceptions.user import (
+    InvalidUserException,
+    UserAlreadyExistsException,
+    UserNotFoundException,
+    UserPasswordNotMatchException,
+)
 from schemas.response import BaseResponse
 
 
@@ -47,3 +52,4 @@ def init_exception_handlers(app: FastAPI):
     app.add_exception_handler(InvalidGoogleTokenException, custom_base_handler)
     app.add_exception_handler(GoogleClientIdMismatchException, custom_base_handler)
     app.add_exception_handler(OAuthAccountConflictException, custom_base_handler)
+    app.add_exception_handler(InvalidUserException, custom_base_handler)
