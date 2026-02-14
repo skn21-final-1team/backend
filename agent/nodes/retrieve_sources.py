@@ -30,9 +30,7 @@ but you don\'t need to use LangChain to use LangGraph.
         num = random.randint(1, 10)  # noqa: S311
         limit = 8
         if num < limit:
-            print(f"[retrieve_sources] 소스 {len([temp_sources])}건 조회 완료")
             return {"sources": [temp_sources]}
-        print("[retrieve_sources] 소스 없음")
         return {"sources": []}
     finally:
         db.close()

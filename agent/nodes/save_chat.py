@@ -13,10 +13,8 @@ def save_chat(state: QAState) -> dict[str, str]:
     """
     db = SessionLocal()
     try:
-        print(f"[save_chat] notebook_id={state['notebook_id']} 저장 시작")
         create_chat(db, notebook_id=state["notebook_id"], role="user", message=state["question"])
         create_chat(db, notebook_id=state["notebook_id"], role="assistant", message=state["answer"])
-        print("[save_chat] 저장 완료")
         return {"answer": state["answer"]}
     finally:
         db.close()

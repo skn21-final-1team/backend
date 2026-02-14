@@ -25,9 +25,7 @@ def classify_intent(state: QAState) -> dict[str, str]:
     Returns:
         intent 키를 포함한 딕셔너리
     """
-    print(f"[classify_intent] 입력 질문: {state['question']}")
     messages = [SystemMessage(content=CLASSIFY_SYSTEM_PROMPT.format(question=state["question"]))]
     response = llm.with_structured_output(RouteByIntent).invoke(messages)
 
-    print(f"[classify_intent] 분류 결과: {response.intent}")
     return {"intent": response.intent}
