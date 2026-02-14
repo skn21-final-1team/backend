@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.route import api_router
+from core.auth_guard import AuthMiddleware
 from core.config import get_settings
 from core.exceptions.exception_handlers import init_exception_handlers
 from db.database import Base, engine
@@ -33,6 +34,8 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Refresh-Token"],
 )
+
+app.add_middleware(AuthMiddleware)
 
 app.include_router(api_router, prefix=settings.api_str)
 

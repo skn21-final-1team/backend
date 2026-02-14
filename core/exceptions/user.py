@@ -1,3 +1,5 @@
+from fastapi.responses import JSONResponse
+
 from core.exceptions.base import CustomException
 
 
@@ -27,3 +29,11 @@ class InvalidUserException(CustomException):
 
     def __init__(self):
         super().__init__("유저 정보가 유효하지 않습니다.", code=401)
+
+
+def user_unauthorized_exception():
+    """유저 인증이 필요할 때 사용, 미들웨어에서 사용하기위해 response로 반환"""
+    return JSONResponse(
+        status_code=401,
+        content={"status": "error", "data": None, "message": "인증이 필요합니다."},
+    )

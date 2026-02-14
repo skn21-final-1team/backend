@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Response
 
+from core.auth_guard import public
 from db.database import DbSession
 from schemas.auth import LoginResponse, UserInfoResponse
 from schemas.login import LoginRequest
@@ -15,6 +16,7 @@ router = APIRouter()
     response_model=BaseResponse[LoginResponse],
     responses={404: {"model": BaseResponse}, 401: {"model": BaseResponse}},
 )
+@public
 def login(req: LoginRequest, db: DbSession, response: Response) -> BaseResponse[LoginResponse]:
     user = login_service.login(req, db)
     access_token, refresh_token = auth_service.create_tokens(user.id, db)

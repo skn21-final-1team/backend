@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from core.auth_guard import public
+
 router = APIRouter()
 
 
@@ -12,6 +14,7 @@ class HealthResponse(BaseModel):
 
 
 @router.get("", response_model=HealthResponse)
+@public
 def health_check() -> HealthResponse:
     return HealthResponse(
         status="healthy",

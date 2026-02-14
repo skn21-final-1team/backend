@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Response
 
+from core.auth_guard import public
 from db.database import DbSession
 from schemas.auth import GoogleLoginRequest, LoginResponse, RefreshTokenRequest, TokenResponse, UserInfoResponse
 from schemas.response import BaseResponse
@@ -14,6 +15,7 @@ router = APIRouter()
     response_model=BaseResponse[LoginResponse],
     responses={401: {"model": BaseResponse}, 409: {"model": BaseResponse}},
 )
+@public
 def google_login(req: GoogleLoginRequest, db: DbSession, response: Response) -> BaseResponse[LoginResponse]:
     user = google_auth_service.verify_and_login(req.id_token, db)
     access_token, refresh_token = auth_service.create_tokens(user.id, db)
@@ -36,6 +38,7 @@ def google_login(req: GoogleLoginRequest, db: DbSession, response: Response) -> 
     response_model=BaseResponse[TokenResponse],
     responses={401: {"model": BaseResponse}},
 )
+@public
 def refresh_token(req: RefreshTokenRequest, db: DbSession, response: Response) -> BaseResponse[TokenResponse]:
     new_access_token, new_refresh_token = auth_service.refresh_access_token(req.refresh_token, db)
 
