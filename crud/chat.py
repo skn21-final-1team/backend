@@ -12,7 +12,7 @@ def create_chat(db: Session, notebook_id: int, role: str, message: str) -> ChatM
 
 
 def get_chat_by_notebook_id(db: Session, notebook_id: int) -> list[ChatModel]:
-    return db.query(ChatModel).filter(ChatModel.notebook_id == notebook_id).all()
+    return db.query(ChatModel).filter(ChatModel.notebook_id == notebook_id).order_by(ChatModel.created_at).all()
 
 
 def get_chat_by_chat_id(db: Session, chat_id: int) -> ChatModel | None:

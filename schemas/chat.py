@@ -1,10 +1,9 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatRequest(BaseModel):
-    role: str = Field(..., description="채팅 역할", examples=["user"])
     message: str = Field(..., description="채팅 메시지", examples=["안녕하세요"])
     notebook_id: int = Field(..., description="노트북 ID", examples=[1])
 
@@ -15,3 +14,10 @@ class ChatResponse(BaseModel):
     message: str
     created_at: datetime
     notebook_id: int
+
+
+class ChatHistoryForAgent(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    role: str
+    message: str

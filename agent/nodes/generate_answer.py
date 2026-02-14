@@ -12,11 +12,11 @@ from agent.state import QAState
 def format_chat_history(history: list[dict]) -> str:
     if not history:
         return "없음"
-    return "\n".join(f"{chat['role']}: {chat['message']}" for chat in history)
+    return "\n".join(f"{chat.role}: {chat.message}" for chat in history)
 
 
-def generate_answer(state: QAState) -> dict[str, str]:
-    """소스 자료 기반으로 LLM 답변을 생성합니다.
+async def generate_answer(state: QAState) -> dict[str, str]:
+    """소스 자료 + 이전 채팅히스토리 기반으로 LLM 답변을 생성합니다.
 
     Args:
         state: sources, chat_history, question을 포함한 QAState
@@ -38,12 +38,11 @@ def generate_answer(state: QAState) -> dict[str, str]:
         ),
     ]
 
-    response = llm.invoke(messages)
-    print(f"[generate_answer] 답변 생성 완료 (길이: {len(response.content)})")
+    response = await llm.ainvoke(messages)
     return {"answer": response.content}
 
 
-def generate_casual_answer(state: QAState) -> dict[str, str]:
+async def generate_casual_answer(state: QAState) -> dict[str, str]:
     """일상적인 대화에 대한 LLM 답변을 생성합니다.
 
     Args:
