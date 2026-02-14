@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import HTTPException, status
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 
 from core.config import get_settings
@@ -33,10 +32,4 @@ def create_refresh_token(data: dict[str, str | int]) -> str:
 
 
 def decode_token(token: str) -> dict[str, str | int]:
-    try:
-        return jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
-    except JWTError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="유효하지 않은 토큰입니다.",
-        ) from e
+    return jwt.decode(token, settings.secret_key, algorithms=settings.jwt_algorithm)

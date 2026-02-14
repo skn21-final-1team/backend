@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     app_name: str = Field(default="FastAPI Application", alias="APP_NAME")
     debug: bool = Field(default=False, alias="DEBUG")
     api_str: str = Field(default="/api", alias="API_STR")
-    secret_key: str = Field(default="your-secret-key-here", alias="SECRET_KEY")
+    secret_key: str = Field(default="", alias="SECRET_KEY")
 
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
