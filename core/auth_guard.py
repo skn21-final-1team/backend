@@ -75,3 +75,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         with get_db_context() as db:
             return db.query(UserModel).filter(UserModel.id == int(user_id)).first()
+
+
+def get_current_user(request: Request) -> UserModel:
+    return request.state.user
