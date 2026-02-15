@@ -9,10 +9,6 @@ class TokenResponse(BaseModel):
     access_token: str
 
 
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str = Field(..., description="Refresh Token")
-
-
 class LoginResponse(BaseModel):
     access_token: str
     user: "UserInfoResponse"

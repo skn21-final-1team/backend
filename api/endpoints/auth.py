@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Header, Response
 
 from core.auth_guard import public
 from db.database import DbSession
-from schemas.auth import GoogleLoginRequest, LoginResponse, RefreshTokenRequest, TokenResponse, UserInfoResponse
+from schemas.auth import GoogleLoginRequest, LoginResponse, TokenResponse, UserInfoResponse
 from schemas.response import BaseResponse
 from services.auth import auth_service
 from services.google_auth import google_auth_service
@@ -33,14 +33,20 @@ def google_login(req: GoogleLoginRequest, db: DbSession, response: Response) -> 
     return BaseResponse.ok(data=login_response, message="Google 로그인 성공")
 
 
-@router.post(
+@router.get(
     "/refresh",
     response_model=BaseResponse[TokenResponse],
     responses={401: {"model": BaseResponse}},
 )
 @public
-def refresh_token(req: RefreshTokenRequest, db: DbSession, response: Response) -> BaseResponse[TokenResponse]:
-    new_access_token, new_refresh_token = auth_service.refresh_access_token(req.refresh_token, db)
+def new_access_token(
+    db: DbSession,
+    response: Response,
+    refresh_token: str | None = Header(default=None, alias="X-Refresh-Token"),
+) -> BaseResponse[TokenResponse]:
+    if refresh_token is None:
+        return BaseResponse.error(401, "리프레시 토큰이 없습니다")
+    new_access_token, new_refresh_token = auth_service.refresh_access_token(refresh_token, db)
 
     response.headers["X-Refresh-Token"] = new_refresh_token
     token_response = TokenResponse(access_token=new_access_token)
