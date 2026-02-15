@@ -26,6 +26,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         request.state.user = None
 
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         if self._is_exempt_path(request.url.path):
             return await call_next(request)
 
