@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from core.security import ExtensionToken, NotebookId
+from core.security import NotebookId
 from db.database import DbSession
 from schemas.extension import ExtensionUploadRequest
 from schemas.response import BaseResponse
