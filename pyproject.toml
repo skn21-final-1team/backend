@@ -20,6 +20,8 @@ dependencies = [
     "alembic>=1.18.4",
     "langgraph>=1.0.8",
     "langchain-openai>=1.1.9",
+    "langchain-community>=0.4.1",
+    "beautifulsoup4>=4.14.3",
 ]
 
 [project.optional-dependencies]
