@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Response
 
 from core.auth_guard import public
+from core.config import get_settings
 from db.database import DbSession
 from schemas.auth import LoginResponse, UserInfoResponse
 from schemas.login import LoginRequest
@@ -9,6 +10,7 @@ from services.auth import auth_service
 from services.login import login_service
 
 router = APIRouter()
+settings = get_settings()
 
 
 @router.post(
@@ -21,7 +23,14 @@ def login(req: LoginRequest, db: DbSession, response: Response) -> BaseResponse[
     user = login_service.login(req, db)
     access_token, refresh_token = auth_service.create_tokens(user.id, db)
 
-    response.headers["X-Refresh-Token"] = refresh_token
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+    )
     login_response = LoginResponse(
         access_token=access_token,
         user=UserInfoResponse(
