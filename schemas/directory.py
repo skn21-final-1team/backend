@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-
+from models.directory import DirectoryModel
 
 class DirectoryRequest(BaseModel):
     title: str = Field(..., description="디렉토리 제목", examples=["폴더 1"])
@@ -14,7 +14,7 @@ class DirectoryResponse(BaseModel):
     parent_id: int | None
 
     @staticmethod
-    def from_model(directory):
+    def from_model(directory: DirectoryModel):
         return DirectoryResponse(
             id=directory.id,
             title=directory.name,

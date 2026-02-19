@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from core.security import CurrentUser, create_extension_token
 from db.database import DbSession
 from schemas.notebook import ExtensionTokenResponse, NotebookRequest, NotebookResponse
+from schemas.content import ContentNode
 from schemas.response import BaseResponse
 from services.notebook import notebook_service
 
@@ -50,6 +51,13 @@ def get_notebooks(db: DbSession, user: CurrentUser) -> BaseResponse[list[Noteboo
 def get_notebook(notebook_id: int, db: DbSession) -> BaseResponse[NotebookResponse]:
     return BaseResponse.ok(notebook_service.get_notebook(notebook_id, db))
 
+@router.get(
+    "/{notebook_id}/content",
+    response_model=BaseResponse[list[ContentNode]],
+    responses={404: {"model": BaseResponse}, 403: {"model": BaseResponse}},
+)
+def get_notebook_content(notebook_id: int, db: DbSession, user: CurrentUser) -> BaseResponse[list[ContentNode]]:
+    return BaseResponse.ok(notebook_service.get_notebook_content(notebook_id, db))
 
 @router.patch(
     "/{notebook_id}",
