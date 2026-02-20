@@ -52,9 +52,17 @@ def _to_duckduckgo(url: str) -> str:
     return f"https://html.duckduckgo.com/html/?{urlencode({'q': query})}"
 
 
+def _to_mobile_naver(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.netloc == "blog.naver.com":
+        return url.replace("blog.naver.com", "m.blog.naver.com", 1)
+    return url
+
+
 class HybridClient:
     async def scrape(self, url: str) -> CrawlResult:
         url = _to_duckduckgo(url)
+        url = _to_mobile_naver(url)
         settings = get_crawl_settings()
         try:
             title, content = await self._scrape_static(url)
