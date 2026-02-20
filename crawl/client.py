@@ -8,6 +8,7 @@ from trafilatura import extract, extract_metadata
 
 from core.exceptions.crawl import CrawlFailedException
 from crawl.crawl import get_crawl_settings
+from crawl.validator import validate
 from schemas.crawl import CrawlResult
 
 _USER_AGENT = (
@@ -65,26 +66,28 @@ class HybridClient:
         url = _to_mobile_naver(url)
         settings = get_crawl_settings()
         try:
-            title, content = await self._scrape_static(url)
+            title, content, html = await self._scrape_static(url)
             if len(content) < settings.static_fallback_threshold:
-                title, content = await self._scrape_dynamic(url)
+                title, content, html = await self._scrape_dynamic(url)
         except CrawlFailedException:
             raise
         except Exception as e:
             raise CrawlFailedException from e
 
+        validate(html, content)
         return CrawlResult(url=url, title=title or None, summary=content)
 
-    async def _scrape_static(self, url: str) -> tuple[str | None, str]:
+    async def _scrape_static(self, url: str) -> tuple[str | None, str, str]:
         async with httpx.AsyncClient(headers=_HEADERS, timeout=30.0, follow_redirects=True) as client:
             response = await client.get(url)
             response.raise_for_status()
         html = response.text
         if "duckduckgo.com" in url:
-            return "DuckDuckGo 검색 결과", _parse_duckduckgo_html(html)
-        return _parse_html(html)
+            return "DuckDuckGo 검색 결과", _parse_duckduckgo_html(html), html
+        title, content = _parse_html(html)
+        return title, content, html
 
-    async def _scrape_dynamic(self, url: str) -> tuple[str | None, str]:
+    async def _scrape_dynamic(self, url: str) -> tuple[str | None, str, str]:
         settings = get_crawl_settings()
         stealth = Stealth(navigator_languages_override=("ko-KR", "ko"))
         async with stealth.use_async(async_playwright()) as p:
@@ -104,7 +107,7 @@ class HybridClient:
             await browser.close()
 
         _, content = _parse_html(html)
-        return title or None, content
+        return title or None, content, html
 
 
 hybrid_client = HybridClient()
