@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 
-from core.security import get_current_user
+from core.auth_guard import get_current_user
 from db.database import DbSession
 from schemas.directory import DirectoryKeyResponse
 from schemas.response import BaseResponse
@@ -9,7 +9,7 @@ from services.directory_key import directory_key_service
 router = APIRouter()
 
 
-@router.post(
+@router.get(
     "/key",
     response_model=BaseResponse[DirectoryKeyResponse],
     responses={404: {"model": BaseResponse}},
