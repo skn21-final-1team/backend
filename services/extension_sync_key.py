@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 import crud.notebook as notebook_crud
 from core.exceptions.common import InvalidRequestException
-from crud.extension_sync_key import create_sync_key, delete_sync_key
+from crud.extension_sync_key import create_sync_key, delete_sync_key_by_user_id
 
 
 class ExtensionSyncKeyService:
@@ -18,7 +18,7 @@ class ExtensionSyncKeyService:
         if notebook.user_id != user_id:
             raise InvalidRequestException
 
-        delete_sync_key(db, user_id)
+        delete_sync_key_by_user_id(db, user_id)
 
         sync_key = secrets.token_urlsafe(16)
         expires_at = datetime.now(UTC) + timedelta(minutes=15)

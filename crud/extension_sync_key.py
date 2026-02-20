@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from models.extension import ExtensionSyncKeyModel
 
 
-def delete_sync_key(db: Session, sync_key: str) -> None:
-    db.query(ExtensionSyncKeyModel).filter(ExtensionSyncKeyModel.sync_key == sync_key).delete(synchronize_session=False)
+def delete_sync_key_by_user_id(db: Session, user_id: int) -> None:
+    db.query(ExtensionSyncKeyModel).filter(ExtensionSyncKeyModel.user_id == user_id).delete(synchronize_session=False)
     db.commit()
 
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from core.auth_guard import get_current_user
 from db.database import DbSession
@@ -10,14 +10,14 @@ from services.extension_sync_key import extension_sync_key_service
 router = APIRouter()
 
 
-@router.get(
+@router.post(
     "/key",
     response_model=BaseResponse[DirectorySyncKeyResponse],
     responses={404: {"model": BaseResponse}},
 )
-def create_extension_sync_key(req: DirectorySyncKeyRequest, db: DbSession):
-    user = get_current_user(req)
-    sync_key, expires_at = extension_sync_key_service.generate_sync_key(user.id, db, req.notebook_id)
+def create_extension_sync_key(body: DirectorySyncKeyRequest, db: DbSession, request: Request):
+    user = get_current_user(request)
+    sync_key, expires_at = extension_sync_key_service.generate_sync_key(user.id, db, body.notebook_id)
     return BaseResponse.ok(DirectorySyncKeyResponse(sync_key=sync_key, expires_at=expires_at))
 
 
@@ -25,7 +25,7 @@ def create_extension_sync_key(req: DirectorySyncKeyRequest, db: DbSession):
     "/sync",
     response_model=BaseResponse[None],
 )
-def sync_directory_data(req: DirectorySyncRequest, db: DbSession):
+def sync_directory_data(body: DirectorySyncRequest, db: DbSession):
     """extension 에서 북마크 동기화 호출용"""
-    directory_sync_service.sync_bookmarks(req.sync_key, req.bookmarks, db)
+    directory_sync_service.sync_bookmarks(body.sync_key, body.bookmarks, db)
     return BaseResponse.ok(data=None)
