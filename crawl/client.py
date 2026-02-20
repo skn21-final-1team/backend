@@ -1,5 +1,3 @@
-from urllib.parse import parse_qs, urlencode, urlparse
-
 import httpx
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
@@ -8,6 +6,7 @@ from trafilatura import extract, extract_metadata
 
 from core.exceptions.crawl import CrawlFailedException
 from crawl.crawl import get_crawl_settings
+from crawl.normalizer import normalize
 from crawl.validator import validate
 from schemas.crawl import CrawlResult
 
@@ -43,27 +42,9 @@ def _parse_duckduckgo_html(html: str) -> str:
     return "\n\n".join(results)
 
 
-def _to_duckduckgo(url: str) -> str:
-    parsed = urlparse(url)
-    if "google" not in parsed.netloc:
-        return url
-    query = parse_qs(parsed.query).get("q", [""])[0]
-    if not query:
-        return url
-    return f"https://html.duckduckgo.com/html/?{urlencode({'q': query})}"
-
-
-def _to_mobile_naver(url: str) -> str:
-    parsed = urlparse(url)
-    if parsed.netloc == "blog.naver.com":
-        return url.replace("blog.naver.com", "m.blog.naver.com", 1)
-    return url
-
-
 class HybridClient:
     async def scrape(self, url: str) -> CrawlResult:
-        url = _to_duckduckgo(url)
-        url = _to_mobile_naver(url)
+        url = normalize(url)
         settings = get_crawl_settings()
         try:
             title, content, html = await self._scrape_static(url)
