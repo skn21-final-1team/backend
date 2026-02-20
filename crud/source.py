@@ -4,8 +4,12 @@ from models.source import SourceModel
 
 
 # notebook_id, directory_id 파라미터는 해당 테이블 생성 후 추가
-def create_source(db: Session, url: str, title: str | None, summary: str) -> SourceModel:
-    source = SourceModel(url=url, title=title, summary=summary)
+def create_source(
+    db: Session, url: str, title: str, summary: str, user_id: int, directory_id: int | None, is_active: bool
+) -> SourceModel:
+    source = SourceModel(
+        url=url, title=title, summary=summary, user_id=user_id, directory_id=directory_id, is_active=is_active
+    )
     db.add(source)
     db.commit()
     db.refresh(source)

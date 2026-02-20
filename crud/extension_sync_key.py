@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from models.extension import ExtensionSyncKeyModel
 
 
-def delete_sync_key_by_user(db: Session, user_id: int) -> None:
-    db.query(ExtensionSyncKeyModel).filter(ExtensionSyncKeyModel.user_id == user_id).delete(synchronize_session=False)
+def delete_sync_key(db: Session, sync_key: str) -> None:
+    db.query(ExtensionSyncKeyModel).filter(ExtensionSyncKeyModel.sync_key == sync_key).delete(synchronize_session=False)
     db.commit()
 
 
@@ -16,9 +16,5 @@ def create_sync_key(db: Session, user_id: int, sync_key: str, expires_at: str | 
     return db_key
 
 
-def get_sync_key(db: Session, sync_key: str, user_id: int) -> ExtensionSyncKeyModel | None:
-    return (
-        db.query(ExtensionSyncKeyModel)
-        .filter(ExtensionSyncKeyModel.sync_key == sync_key, ExtensionSyncKeyModel.user_id == user_id)
-        .first()
-    )
+def get_sync_key(db: Session, sync_key: str) -> ExtensionSyncKeyModel | None:
+    return db.query(ExtensionSyncKeyModel).filter(ExtensionSyncKeyModel.sync_key == sync_key).first()
