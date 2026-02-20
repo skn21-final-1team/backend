@@ -16,7 +16,7 @@ class ExtensionSyncKeyService:
 
         create_directory_key(db=db, user_id=user_id, sync_key=sync_key, expires_at=expires_at)
 
-        return sync_key, expires_at
+        return sync_key, expires_at.isoformat()
 
 
 extension_sync_key_service = ExtensionSyncKeyService()
