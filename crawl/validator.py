@@ -17,16 +17,11 @@ _GARBAGE_PATTERNS: list[re.Pattern[str]] = [
 ]
 
 
-def validate(html: str, content: str) -> None:
+def validate(content: str) -> None:
     settings = get_crawl_settings()
 
     if len(content) < settings.min_content_length:
         raise CrawlFailedException("콘텐츠가 너무 짧습니다.")
-
-    if html:
-        ratio = len(content) / len(html)
-        if ratio < settings.min_text_html_ratio:
-            raise CrawlFailedException("텍스트 비율이 너무 낮습니다. (JS 렌더링 실패 가능)")
 
     for pattern in _GARBAGE_PATTERNS:
         if pattern.search(content):

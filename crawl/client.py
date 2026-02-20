@@ -15,18 +15,18 @@ class HybridClient:
         url = normalize(url)
         settings = get_crawl_settings()
         try:
-            title, content, html = await self._scrape_static(url)
+            title, content = await self._scrape_static(url)
             if len(content) < settings.static_fallback_threshold:
-                title, content, html = await self._scrape_dynamic(url)
+                title, content = await self._scrape_dynamic(url)
         except CrawlFailedException:
             raise
         except Exception as e:
             raise CrawlFailedException from e
 
-        validate(html, content)
+        validate(content)
         return CrawlResult(url=url, title=title or None, summary=content)
 
-    async def _scrape_static(self, url: str) -> tuple[str | None, str, str]:
+    async def _scrape_static(self, url: str) -> tuple[str | None, str]:
         settings = get_crawl_settings()
         headers = {"User-Agent": settings.user_agent, "Accept-Language": settings.accept_language}
         async with httpx.AsyncClient(headers=headers, timeout=30.0, follow_redirects=True) as client:
@@ -34,11 +34,10 @@ class HybridClient:
             response.raise_for_status()
         html = response.text
         if "duckduckgo.com" in url:
-            return "DuckDuckGo 검색 결과", parse_duckduckgo_html(html), html
-        title, content = parse_html(html)
-        return title, content, html
+            return "DuckDuckGo 검색 결과", parse_duckduckgo_html(html)
+        return parse_html(html)
 
-    async def _scrape_dynamic(self, url: str) -> tuple[str | None, str, str]:
+    async def _scrape_dynamic(self, url: str) -> tuple[str | None, str]:
         settings = get_crawl_settings()
         stealth = Stealth(navigator_languages_override=("ko-KR", "ko"))
         async with stealth.use_async(async_playwright()) as p:
@@ -60,7 +59,7 @@ class HybridClient:
                 await browser.close()
 
         _, content = parse_html(html)
-        return title or None, content, html
+        return title or None, content
 
 
 hybrid_client = HybridClient()

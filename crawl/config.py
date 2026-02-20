@@ -20,8 +20,7 @@ class CrawlSettings(BaseSettings):
     static_fallback_threshold: int = 150
     user_agent: str = _DEFAULT_USER_AGENT
     accept_language: str = "ko-KR,ko;q=0.9"
-    min_text_html_ratio: float = 0.02
-    min_content_length: int = 50
+    min_content_length: int = 30
 
 
 @lru_cache
