@@ -18,7 +18,7 @@ def create_notebook(req: NotebookRequest, db: DbSession, user_id: int = Query(..
 
 
 @router.get(
-    "",
+    "/list",
     response_model=BaseResponse[list[NotebookResponse]],
     responses={404: {"model": BaseResponse}},
 )
