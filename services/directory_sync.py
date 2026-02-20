@@ -18,13 +18,18 @@ class DirectorySyncService:
         if sync_key.expires_at < datetime.now(UTC):
             raise InvalidTokenException
 
-        return sync_key.user_id
+        return sync_key
 
     def delete_sync_key(self, sync_key: str, db: Session) -> None:
         extension_sync_key_crud.delete_sync_key(db, sync_key)
 
     def save_directory_tree(
-        self, db: Session, user_id: int, bookmarks: list[BookmarkFromExtension], parent_id: int | None = None
+        self,
+        db: Session,
+        user_id: int,
+        bookmarks: list[BookmarkFromExtension],
+        notebook_id: int,
+        parent_id: int | None = None,
     ):
 
         for bookmark in bookmarks:
@@ -34,13 +39,13 @@ class DirectorySyncService:
                     title=bookmark.title,
                     user_id=user_id,
                     parent_id=parent_id,
+                    notebook_id=notebook_id,
                 )
-                db.flush()
 
                 if bookmark.children:
-                    self.save_directory_tree(db, user_id, bookmark.children, directory.id)
+                    self.save_directory_tree(db, user_id, bookmark.children, notebook_id, directory.id)
             else:
-                source_crud.create_source_sync(
+                source_crud.create_source(
                     db=db,
                     url=bookmark.url,
                     title=bookmark.title,
@@ -48,17 +53,16 @@ class DirectorySyncService:
                     user_id=user_id,
                     directory_id=parent_id,
                     is_active=True,
+                    notebook_id=notebook_id,
                 )
 
-        db.commit()
-
     def sync_bookmarks(self, sync_key: str, bookmarks: list[BookmarkFromExtension], db: Session) -> None:
-        user_id = self.get_user_id_from_sync_key(sync_key, db)
+        target = self.get_user_id_from_sync_key(sync_key, db)
 
-        if user_id:
+        if target:
             self.delete_sync_key(sync_key, db)
 
-        self.save_directory_tree(db, user_id, bookmarks)
+        self.save_directory_tree(db, target.user_id, bookmarks, target.notebook_id, None)
 
 
 directory_sync_service = DirectorySyncService()
