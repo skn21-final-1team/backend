@@ -41,7 +41,6 @@ class DirectorySyncService:
                     parent_id=parent_id,
                     notebook_id=notebook_id,
                 )
-
                 if bookmark.children:
                     self.save_directory_tree(db, user_id, bookmark.children, notebook_id, directory.id)
             else:
@@ -55,14 +54,12 @@ class DirectorySyncService:
                     is_active=True,
                     notebook_id=notebook_id,
                 )
+        db.commit()
 
     def sync_bookmarks(self, sync_key: str, bookmarks: list[BookmarkFromExtension], db: Session) -> None:
         target = self.get_user_id_from_sync_key(sync_key, db)
-
-        if target:
-            self.delete_sync_key(sync_key, db)
-
         self.save_directory_tree(db, target.user_id, bookmarks, target.notebook_id, None)
+        self.delete_sync_key(sync_key, db)
 
 
 directory_sync_service = DirectorySyncService()

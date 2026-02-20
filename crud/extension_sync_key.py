@@ -8,6 +8,11 @@ def delete_sync_key_by_user_id(db: Session, user_id: int) -> None:
     db.commit()
 
 
+def delete_sync_key(db: Session, sync_key: str) -> None:
+    db.query(ExtensionSyncKeyModel).filter(ExtensionSyncKeyModel.sync_key == sync_key).delete(synchronize_session=False)
+    db.commit()
+
+
 def create_sync_key(
     db: Session,
     user_id: int,

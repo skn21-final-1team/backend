@@ -24,6 +24,5 @@ def create_source(
         notebook_id=notebook_id,
     )
     db.add(source)
-    db.commit()
-    db.refresh(source)
+    db.flush()
     return source
