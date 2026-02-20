@@ -1,6 +1,7 @@
 import re
 
 from core.exceptions.crawl import CrawlFailedException
+from crawl.config import get_crawl_settings
 
 _GARBAGE_PATTERNS: list[re.Pattern[str]] = [
     re.compile(p, re.IGNORECASE)
@@ -15,17 +16,16 @@ _GARBAGE_PATTERNS: list[re.Pattern[str]] = [
     ]
 ]
 
-_MIN_TEXT_HTML_RATIO = 0.02
-_MIN_CONTENT_LENGTH = 50
-
 
 def validate(html: str, content: str) -> None:
-    if len(content) < _MIN_CONTENT_LENGTH:
+    settings = get_crawl_settings()
+
+    if len(content) < settings.min_content_length:
         raise CrawlFailedException("콘텐츠가 너무 짧습니다.")
 
-    if html and len(html) > 0:
+    if html:
         ratio = len(content) / len(html)
-        if ratio < _MIN_TEXT_HTML_RATIO:
+        if ratio < settings.min_text_html_ratio:
             raise CrawlFailedException("텍스트 비율이 너무 낮습니다. (JS 렌더링 실패 가능)")
 
     for pattern in _GARBAGE_PATTERNS:
