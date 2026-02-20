@@ -11,12 +11,9 @@ class CrawlSettings(BaseSettings):
         extra="ignore",
     )
 
-    # 기본값 세팅구조, 지우고 .env 파일에서 컨트롤 해도 괜찮습니다.
-    firecrawl_base_url: str = "http://localhost:3002"
-    firecrawl_compose_path: str = "docker/firecrawl/docker-compose.yml"
-    firecrawl_timeout: float = 60.0
-    firecrawl_health_max_retries: int = 30
-    firecrawl_health_retry_interval: float = 2.0
+    playwright_timeout: int = 30000
+    playwright_headless: bool = True
+    static_fallback_threshold: int = 150
 
 
 @lru_cache
