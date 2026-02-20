@@ -17,7 +17,7 @@ router = APIRouter()
 )
 def create_extension_sync_key(req: DirectorySyncKeyRequest, db: DbSession):
     user = get_current_user(req)
-    sync_key, expires_at = extension_sync_key_service.generate_sync_key(user.id, db)
+    sync_key, expires_at = extension_sync_key_service.generate_sync_key(user.id, db, req.notebook_id)
     return BaseResponse.ok(DirectorySyncKeyResponse(sync_key=sync_key, expires_at=expires_at))
 
 

@@ -8,8 +8,14 @@ def delete_sync_key(db: Session, sync_key: str) -> None:
     db.commit()
 
 
-def create_sync_key(db: Session, user_id: int, sync_key: str, expires_at: str | None = None) -> ExtensionSyncKeyModel:
-    db_key = ExtensionSyncKeyModel(user_id=user_id, sync_key=sync_key, expires_at=expires_at)
+def create_sync_key(
+    db: Session,
+    user_id: int,
+    sync_key: str,
+    notebook_id: int,
+    expires_at: str | None = None,
+) -> ExtensionSyncKeyModel:
+    db_key = ExtensionSyncKeyModel(user_id=user_id, sync_key=sync_key, notebook_id=notebook_id, expires_at=expires_at)
     db.add(db_key)
     db.commit()
     db.refresh(db_key)
