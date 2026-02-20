@@ -17,4 +17,4 @@ router = APIRouter()
 def create_bookmark_sync_key(req: Request, db: DbSession) -> BaseResponse[DirectoryKeyResponse]:
     user = get_current_user(req)
     bookmark_sync_key, expires_at = directory_key_service.generate_directory_key(user.id, db)
-    return BaseResponse.ok(DirectoryKeyResponse(bookmark_sync_key=bookmark_sync_key, expires_at=expires_at))
+    return BaseResponse.ok(DirectoryKeyResponse(bookmark_sync_key=bookmark_sync_key, expires_at=expires_at.isoformat()))

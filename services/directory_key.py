@@ -8,7 +8,7 @@ from crud.directory_key import create_directory_key, delete_directory_key_by_use
 
 class DirectoryKeyService:
     @staticmethod
-    def generate_directory_key(user_id: int, db: Session) -> str:
+    def generate_directory_key(user_id: int, db: Session) -> tuple[str, str]:
         delete_directory_key_by_user(db, user_id)
 
         bookmark_sync_key = secrets.token_urlsafe(16)
