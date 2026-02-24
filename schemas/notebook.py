@@ -8,3 +8,7 @@ class NotebookRequest(BaseModel):
 class NotebookResponse(BaseModel):
     id: int
     title: str
+
+
+class NotebookDeleteRequest(BaseModel):
+    notebook_id: int

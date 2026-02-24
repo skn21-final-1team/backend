@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query, Request
 
 from core.auth_guard import get_current_user
 from db.database import DbSession
-from schemas.notebook import NotebookRequest, NotebookResponse
+from schemas.notebook import NotebookDeleteRequest, NotebookRequest, NotebookResponse
 from schemas.response import BaseResponse
 from services.notebook import notebook_service
 
