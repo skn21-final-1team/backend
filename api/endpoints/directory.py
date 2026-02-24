@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 
-from core.auth_guard import get_current_user
+from core.auth_guard import get_current_user, public
 from db.database import DbSession
 from schemas.directory import DirectorySyncKeyRequest, DirectorySyncKeyResponse, DirectorySyncRequest
 from schemas.response import BaseResponse
@@ -21,6 +21,7 @@ def create_extension_sync_key(body: DirectorySyncKeyRequest, db: DbSession, requ
     return BaseResponse.ok(DirectorySyncKeyResponse(sync_key=sync_key, expires_at=expires_at))
 
 
+@public
 @router.post(
     "/sync",
     response_model=BaseResponse[None],
