@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
+from core.auth_guard import get_current_user
 from db.database import DbSession
 from schemas.notebook import NotebookRequest, NotebookResponse
 from schemas.response import BaseResponse
@@ -22,8 +23,9 @@ def create_notebook(req: NotebookRequest, db: DbSession, user_id: int = Query(..
     response_model=BaseResponse[list[NotebookResponse]],
     responses={404: {"model": BaseResponse}},
 )
-def get_notebooks(db: DbSession, user_id: int = Query(...)) -> BaseResponse[list[NotebookResponse]]:
-    return BaseResponse.ok(notebook_service.get_notebooks_by_user(user_id, db))
+def get_notebooks(request: Request, db: DbSession) -> BaseResponse[list[NotebookResponse]]:
+    user = get_current_user(request)
+    return BaseResponse.ok(notebook_service.get_notebooks_by_user(user.id, db))
 
 
 @router.get(
