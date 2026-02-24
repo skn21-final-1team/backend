@@ -1,3 +1,6 @@
+from collections.abc import Sequence
+
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from models.source import SourceModel
@@ -26,3 +29,8 @@ def create_source(
     db.add(source)
     db.flush()
     return source
+
+
+def get_sources_by_notebook(db: Session, notebook_id: int) -> Sequence[SourceModel]:
+    stmt = select(SourceModel).where(SourceModel.notebook_id == notebook_id)
+    return db.scalars(stmt).all()
