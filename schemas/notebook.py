@@ -10,5 +10,10 @@ class NotebookResponse(BaseModel):
     title: str
 
 
+class NotebookUpdateRequest(BaseModel):
+    notebook_id: int
+    title: str
+
+
 class NotebookDeleteRequest(BaseModel):
     notebook_id: int
