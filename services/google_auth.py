@@ -1,4 +1,6 @@
 import httpx
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from sqlalchemy.orm import Session
 
 from core.config import get_settings
@@ -12,12 +14,12 @@ from models.users import UserModel
 
 settings = get_settings()
 
-GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
+GOOGLE_OAUTH_URL = "https://oauth2.googleapis.com/token"
 
 
 class GoogleAuthService:
-    def verify_and_login(self, id_token: str, db: Session) -> UserModel:
-        user_info = self._verify_google_token(id_token)
+    def verify_and_login(self, code: str, db: Session) -> UserModel:
+        user_info = self._verify_google_token(code)
         email = user_info["email"]
         name = user_info.get("name", email.split("@")[0])
 
@@ -30,13 +32,24 @@ class GoogleAuthService:
 
         return user
 
-    def _verify_google_token(self, id_token: str) -> dict[str, str]:
-        response = httpx.get(GOOGLE_TOKENINFO_URL, params={"access_token": id_token})
+    def _verify_google_token(self, code: str) -> dict[str, str]:
+        res = httpx.post(
+            GOOGLE_OAUTH_URL,
+            data={
+                "code": code,
+                "client_id": settings.google_client_id,
+                "client_secret": settings.google_client_secret,
+                "redirect_uri": "http://localhost:3000/auth/callback",
+                "grant_type": "authorization_code",
+            },
+        )
 
-        if not response.is_success:
+        token = res.json().get("id_token")
+
+        if not res.is_success:
             raise InvalidGoogleTokenException
 
-        payload = response.json()
+        payload = id_token.verify_oauth2_token(token, google_requests.Request(), settings.google_client_id)
 
         if payload.get("aud") != settings.google_client_id:
             raise GoogleClientIdMismatchException

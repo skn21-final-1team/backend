@@ -18,8 +18,8 @@ settings = get_settings()
     responses={401: {"model": BaseResponse}, 409: {"model": BaseResponse}},
 )
 @public
-def google_login(req: GoogleLoginRequest, db: DbSession, response: Response) -> BaseResponse[LoginResponse]:
-    user = google_auth_service.verify_and_login(req.id_token, db)
+def google_login(body: GoogleLoginRequest, db: DbSession, response: Response) -> BaseResponse[LoginResponse]:
+    user = google_auth_service.verify_and_login(body.code, db)
     access_token, refresh_token = auth_service.create_tokens(user.id, db)
 
     response.set_cookie(

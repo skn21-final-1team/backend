@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class GoogleLoginRequest(BaseModel):
-    id_token: str = Field(..., description="Google ID Token")
+    code: str = Field(..., description="Google Auth Code")
 
 
 class TokenResponse(BaseModel):
