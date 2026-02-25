@@ -50,7 +50,7 @@ jobs:
           key: ${{ secrets.DEV_SSH_KEY }}
           port: ${{ secrets.DEV_SSH_PORT }}
           script: |
-            cd workspace
+            cd /workspace
             git fetch origin devops
             git reset --hard origin/devops
             chmod +x ./dev-deploy.sh
