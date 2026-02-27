@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class BookmarkFromExtension(BaseModel):
-    id: int
+    id: str | int
     url: str | None = None
     title: str
     children: list["BookmarkFromExtension"]

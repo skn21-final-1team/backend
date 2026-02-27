@@ -37,7 +37,6 @@ class DirectorySyncService:
                 directory = directory_crud.create_directory(
                     db=db,
                     title=bookmark.title,
-                    user_id=user_id,
                     parent_id=parent_id,
                     notebook_id=notebook_id,
                 )
@@ -49,7 +48,6 @@ class DirectorySyncService:
                     url=bookmark.url,
                     title=bookmark.title,
                     summary="",
-                    user_id=user_id,
                     directory_id=parent_id,
                     is_active=True,
                     notebook_id=notebook_id,
