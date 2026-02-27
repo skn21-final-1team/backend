@@ -14,6 +14,9 @@ echo "Git Pull 진행 중..."
 git fetch origin devops
 git reset --hard origin/devops
 
+echo "의존성 설치 중..."
+source .venv/bin/activate && uv pip install -r pyproject.toml
+
 echo "서버 재실행 중..."
 tmux new-session -d -s myserver "source .venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4"
 
