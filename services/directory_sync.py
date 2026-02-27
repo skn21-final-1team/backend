@@ -26,7 +26,6 @@ class DirectorySyncService:
     def save_directory_tree(
         self,
         db: Session,
-        user_id: int,
         bookmarks: list[BookmarkFromExtension],
         notebook_id: int,
         parent_id: int | None = None,
@@ -41,7 +40,7 @@ class DirectorySyncService:
                     notebook_id=notebook_id,
                 )
                 if bookmark.children:
-                    self.save_directory_tree(db, user_id, bookmark.children, notebook_id, directory.id)
+                    self.save_directory_tree(db, bookmark.children, notebook_id, directory.id)
             else:
                 source_crud.create_source(
                     db=db,
@@ -56,7 +55,7 @@ class DirectorySyncService:
 
     def sync_bookmarks(self, sync_key: str, bookmarks: list[BookmarkFromExtension], db: Session) -> None:
         target = self.get_user_id_from_sync_key(sync_key, db)
-        self.save_directory_tree(db, target.user_id, bookmarks, target.notebook_id, None)
+        self.save_directory_tree(db, bookmarks, target.notebook_id, None)
         self.delete_sync_key(sync_key, db)
 
 
