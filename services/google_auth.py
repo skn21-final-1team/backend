@@ -45,8 +45,9 @@ class GoogleAuthService:
         )
 
         token = res.json().get("id_token")
+        print("google login token", res.json())
 
-        if not res.is_success:
+        if not token:
             raise InvalidGoogleTokenException
 
         payload = id_token.verify_oauth2_token(token, google_requests.Request(), settings.google_client_id)
