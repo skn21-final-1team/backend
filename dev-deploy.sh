@@ -3,6 +3,14 @@
 
 # tmux attach -t myserver
 
+#8000번 포트를 사용하는 프로세스가 있다면 강제 종료 (PID 확인 후 kill)
+PID=$(lsof -t -i:8000)
+if [ -z "$PID" ]; then
+    echo "No process running on port 8000"
+else
+    echo "Killing process $PID on port 8000"
+    kill -9 $PID
+fi
 
 echo "기존 서버 종료 중..."
 tmux kill-session -t myserver 2>/dev/null || true

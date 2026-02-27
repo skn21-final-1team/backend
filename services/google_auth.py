@@ -45,7 +45,6 @@ class GoogleAuthService:
         )
 
         token = res.json().get("id_token")
-        print("google login token", res.json())
 
         if not token:
             raise InvalidGoogleTokenException
