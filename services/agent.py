@@ -36,6 +36,11 @@ class AgentService:
             },
             stream_mode=["updates", "messages"],
             version="v2",
+            config={
+                "configurable": {
+                    "model_name": "exaone",
+                }
+            },
         ):
             if not self.__is_return_sse(mode, chunk):
                 continue
