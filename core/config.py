@@ -21,11 +21,13 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=1, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     database_url: str = Field(default="", alias="DATABASE_URL")
+    async_database_url: str = Field(default="", alias="ASYNC_DATABASE_URL")
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(default="", alias="GOOGLE_CLIENT_SECRET")
 
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     chunking_crawl_url: str = Field(default="", alias="CHUNKING_CRAWL_URL")
+    embedding_api_url: str = Field(default="", alias="CHUNKING_CRAWL_URL")
 
     backend_cors_origins: list[str] = Field(default=["http://localhost:3000"], alias="BACKEND_CORS_ORIGINS")
 

@@ -1,36 +1,32 @@
-import random
+from langchain_postgres.vectorstores import PGVector
+from sqlalchemy.ext.asyncio import create_async_engine
 
+from agent.model.embedding import EmbeddingModel
 from agent.state import QAState
-from db.database import SessionLocal
+from core.config import get_settings
+
+embeddings = EmbeddingModel()
+settings = get_settings()
+
+async_engine = create_async_engine(settings.async_database_url)
+
+vector_store = PGVector(
+    embeddings=embeddings,
+    collection_name="page_data",
+    connection=async_engine,
+    use_jsonb=True,
+    create_extension=False,
+)
 
 
-def retrieve_sources(_: QAState) -> dict[str, list[str]]:
-    """노트북에 연결된 소스 자료를 조회합니다.
-
-    Args:
-        _: QAState (현재 미사용)
-    Returns:
-        sources 키를 포함한 딕셔너리
-    """
-    print("[retrieve_sources] 소스 조회 시작")
-    db = SessionLocal()
+async def retrieve_sources(state: QAState) -> dict[str, list[str]]:
     try:
-        temp_sources = """
-        LangGraph overview
-Gain control with LangGraph to design agents that reliably handle complex tasks
-Trusted by companies shaping the future of agents— including Klarna, Replit, Elastic, and more— LangGraph is a low-level
-orchestration framework and runtime for building, managing, and deploying long-running, stateful agents.
-LangGraph is very low-level,and focused entirely on agent orchestration. Before using LangGraph,
-we recommend you familiarize yourself with some of the components used to build agents, starting with models and tools.
-We will commonly use LangChain components throughout the documentation to integrate models and tools,
-but you don\'t need to use LangChain to use LangGraph.
-        """
+        print("retriver query start")
+        retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
-        # TODO: 리트리버 구현 후 대체
-        num = random.randint(1, 10)  # noqa: S311
-        limit = 8
-        if num < limit:
-            return {"sources": [temp_sources]}
+        docs = await retriever.ainvoke(state["question"])
+        print(docs)
+        return {"sources": [doc.page_content for doc in docs]}
+    except Exception as e:
+        print(e)
         return {"sources": []}
-    finally:
-        db.close()
