@@ -2,7 +2,6 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 
-from agent.model.cumtom_exaone import MyCustomModel
 from core.config import get_settings
 
 settings = get_settings()
@@ -17,6 +16,13 @@ class LLMModel:
         "api_key": settings.openai_api_key,
     }
 
+    EXAONE_CONFIG = {
+        "model": "exaone",
+        "base_url": "https://otojmh2s7brdai-8080.proxy.runpod.net/api/inference/chat",
+        "temperature": 0,
+        "api_key": "none",
+    }
+
     def get_llm(self, config: RunnableConfig) -> BaseChatModel:
         """RunnableConfig에서 모델 이름을 읽어 대응하는 LLM 인스턴스를 반환합니다.
 
@@ -29,7 +35,7 @@ class LLMModel:
         model_name: str = config.get("configurable", {}).get("model_name", "gpt-4o-mini")
 
         if model_name == "exaone":
-            return MyCustomModel()
+            return ChatOpenAI(**LLMModel.EXAONE_CONFIG)
         return ChatOpenAI(**LLMModel.GPT_4O_MINI_CONFIG)
 
 
