@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     google_client_secret: str = Field(default="", alias="GOOGLE_CLIENT_SECRET")
 
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    chunking_crawl_url: str = Field(default="", alias="CHUNKING_CRAWL_URL")
 
     backend_cors_origins: list[str] = Field(default=["http://localhost:3000"], alias="BACKEND_CORS_ORIGINS")
 

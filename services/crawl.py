@@ -1,12 +1,15 @@
 from httpx import AsyncClient
 
+from core.config import get_settings
 from schemas.crawl import CrawlRequestBody
+
+settings = get_settings()
 
 
 class CrawlService:
     async def crawl_and_save(self, body: CrawlRequestBody) -> bool:
         async with AsyncClient(
-            base_url="https://ae8rlv5eumkv2a-8001.proxy.runpod.net/",
+            base_url=settings.CHUNKING_CRAWL_URL,
             headers={
                 "Content-Type": "application/json",
             },
