@@ -1,7 +1,7 @@
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
 
-from agent.model.llm import llm
+from agent.model.llm_factory import llm_factory
 from agent.prompts.classify import CLASSIFY_SYSTEM_PROMPT
 from agent.state import QAState
 
@@ -18,14 +18,11 @@ class RouteByIntent(BaseModel):
 
 
 def classify_intent(state: QAState) -> dict[str, str]:
-    """사용자 메시지의 의도를 question 또는 casual로 분류합니다.
-
-    Args:
-        state: question을 포함한 QAState
-    Returns:
-        intent 키를 포함한 딕셔너리
-    """
+    """사용자 메시지의 의도를 question 또는 casual로 분류합니다."""
     messages = [SystemMessage(content=CLASSIFY_SYSTEM_PROMPT.format(question=state["question"]))]
+
+    llm = llm_factory.get_llm()
+
     response = llm.with_structured_output(RouteByIntent).invoke(messages)
 
     return {"intent": response.intent}

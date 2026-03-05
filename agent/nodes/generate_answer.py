@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from agent.model.llm import llm
+from agent.model.llm_factory import llm_factory
 from agent.prompts.chat import (
     CASUAL_SYSTEM_PROMPT,
     QA_SYSTEM_PROMPT,
@@ -16,13 +16,7 @@ def format_chat_history(history: list[dict]) -> str:
 
 
 async def generate_answer(state: QAState) -> dict[str, str]:
-    """소스 자료 + 이전 채팅히스토리 기반으로 LLM 답변을 생성합니다.
-
-    Args:
-        state: sources, chat_history, question을 포함한 QAState
-    Returns:
-        answer 키를 포함한 딕셔너리
-    """
+    """소스 자료 + 이전 채팅히스토리 기반으로 LLM 답변을 생성합니다."""
     chat_history_text = format_chat_history(state.get("chat_history", []))
 
     sources_text = "\n\n---\n\n".join(state.get("sources", []))
@@ -38,19 +32,17 @@ async def generate_answer(state: QAState) -> dict[str, str]:
         ),
     ]
 
+    llm = llm_factory.get_llm()
+
     response = await llm.ainvoke(messages)
     return {"answer": response.content}
 
 
 async def generate_casual_answer(state: QAState) -> dict[str, str]:
-    """일상적인 대화에 대한 LLM 답변을 생성합니다.
-
-    Args:
-        state: question을 포함한 QAState
-    Returns:
-        answer 키를 포함한 딕셔너리
-    """
+    """일상적인 대화에 대한 LLM 답변을 생성합니다."""
     messages = [SystemMessage(content=CASUAL_SYSTEM_PROMPT.format(question=state["question"]))]
+
+    llm = llm_factory.get_llm()
 
     response = await llm.ainvoke(messages)
     return {"answer": response.content}
