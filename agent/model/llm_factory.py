@@ -17,8 +17,8 @@ class LLMModel:
     }
 
     EXAONE_CONFIG = {
-        "model": "exaone",
-        "base_url": "https://otojmh2s7brdai-8080.proxy.runpod.net/api/inference/chat",
+        "model": "LGAI-EXAONE/EXAONE-4.0-32B-FP8",
+        "base_url": "https://znqxs20cre6vxo-8080.proxy.runpod.net/api",
         "temperature": 0,
         "api_key": "none",
     }
