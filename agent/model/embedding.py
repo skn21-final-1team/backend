@@ -6,7 +6,7 @@ settings = get_settings()
 
 embeddings = OpenAIEmbeddings(
     model="BAAI/bge-m3",
-    base_url=settings.embedding_reranker_url,
+    base_url=f"{settings.embedding_reranker_url}/openai/v1",
     api_key=settings.runpod_api_key,
     check_embedding_ctx_length=False,
 )
