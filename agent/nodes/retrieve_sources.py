@@ -1,11 +1,10 @@
 from langchain_postgres.vectorstores import PGVector
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from agent.model.embedding import EmbeddingModel
+from agent.model.embedding import embeddings
 from agent.state import QAState
 from core.config import get_settings
 
-embeddings = EmbeddingModel()
 settings = get_settings()
 
 async_engine = create_async_engine(settings.async_database_url)
@@ -21,7 +20,7 @@ vector_store = PGVector(
 
 async def retrieve_sources(state: QAState) -> dict[str, list[str]]:
     try:
-        print("retriver query start")
+        print("retriver query start", state["question"])
         retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
         docs = await retriever.ainvoke(state["question"])
