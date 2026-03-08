@@ -2,6 +2,7 @@ from langchain_postgres.vectorstores import PGVector
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from agent.model.embedding import embeddings
+from agent.model.reranker import reranker
 from agent.state import QAState
 from core.config import get_settings
 
@@ -20,12 +21,14 @@ vector_store = PGVector(
 
 async def retrieve_sources(state: QAState) -> dict[str, list[str]]:
     try:
-        print("retriver query start", state["question"])
-        retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+        question = state["question"]
+        retriever = vector_store.as_retriever(search_kwargs={"k": 10})
 
-        docs = await retriever.ainvoke(state["question"])
-        print(docs)
-        return {"sources": [doc.page_content for doc in docs]}
+        docs = await retriever.ainvoke(question)
+        contents = [doc.page_content for doc in docs]
+
+        reranked = await reranker.rerank(question, contents)
+        return {"sources": reranked}
     except Exception as e:
-        print(e)
+        print("Error in retrieve_sources:", e)
         return {"sources": []}
