@@ -13,6 +13,7 @@ env/
 
 # IDE
 .vscode/
+.github/instructions/
 .idea/
 *.swp
 *.swo
