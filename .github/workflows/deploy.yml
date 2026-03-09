@@ -14,47 +14,48 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           title: "배포 시작"
-          description: "🟡 RunPod 서버로 배포를 시작합니다..."
+          description: "🟡 EC2 서버로 배포를 시작합니다..."
           color: 0xffff00
 
-  lint-and-format:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Set up Python
-        run: uv python install
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
-
-      - name: Run Ruff linting
-        run: uv run ruff check .
-
-      - name: Run Ruff formatting check
-        run: uv run ruff format --check .
-
   deploy:
-    needs: lint-and-format
+    needs: notify-start
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.DEV_SSH_HOST }}
-          username: root
-          key: ${{ secrets.DEV_SSH_KEY }}
-          port: ${{ secrets.DEV_SSH_PORT }}
-          script: |
-            cd /workspace
-            git fetch origin devops
-            git reset --hard origin/devops
-            chmod +x ./dev-deploy.sh
-            ./dev-deploy.sh
+          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy via SSM
+        env:
+          INSTANCE_ID: ${{ secrets.DEV_EC2_INSTANCE_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          set -euo pipefail
+
+          COMMAND_ID=$(aws ssm send-command \
+            --region "$AWS_REGION" \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["cd /workspace","git fetch origin devops","git reset --hard origin/devops","chmod +x ./dev-deploy.sh","./dev-deploy.sh"]' \
+            --comment "GitHub Actions deploy ${GITHUB_REPOSITORY}@${GITHUB_SHA}" \
+            --query "Command.CommandId" \
+            --output text)
+
+          aws ssm wait command-executed \
+            --region "$AWS_REGION" \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"
+
+          aws ssm get-command-invocation \
+            --region "$AWS_REGION" \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"
+
       - name: Finish Notification
         uses: sarisia/actions-status-discord@v1
         if: always()
@@ -62,5 +63,5 @@ jobs:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           status: ${{ job.status }}
           title: "배포 완료"
-          description: "🟢 RunPod 서버로 배포를 완료했습니다...."
+          description: "🟢 EC2 서버로 배포를 완료했습니다."
           color: 0x00ff00
