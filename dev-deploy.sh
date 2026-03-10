@@ -1,15 +1,4 @@
 #!/bin/bash
-set -euo pipefail
-
-export PATH="/home/ubuntu/.local/bin:/home/ubuntu/.cargo/bin:${PATH}"
-
-ensure_uv_command() {
-    if command -v uv >/dev/null 2>&1; then
-        return 0
-    fi
-    echo "uv 바이너리를 찾을 수 없습니다. 현재 PATH: ${PATH}" >&2
-    return 1
-}
 
 # tmux attach -t myserver
 
@@ -33,7 +22,6 @@ git -c safe.directory=/home/ubuntu/workspace fetch origin devops
 git -c safe.directory=/home/ubuntu/workspace reset --hard origin/devops
 
 echo "의존성 설치 중..."
-ensure_uv_command
 source .venv/bin/activate
 uv pip install -r pyproject.toml
 
