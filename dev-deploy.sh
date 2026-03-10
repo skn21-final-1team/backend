@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 
 # tmux attach -t myserver
@@ -15,15 +16,12 @@ fi
 echo "기존 서버 종료 중..."
 tmux kill-session -t myserver 2>/dev/null || true
 
-# Git 안전 디렉토리 설정
-git config --global --add safe.directory /home/ubuntu/workspace 2>/dev/null || true
-
 echo "Git Change 진행 중..."
-git switch devops
+git -c safe.directory=/home/ubuntu/workspace switch devops
 
 echo "Git Pull 진행 중..."
-git fetch origin devops
-git reset --hard origin/devops
+git -c safe.directory=/home/ubuntu/workspace fetch origin devops
+git -c safe.directory=/home/ubuntu/workspace reset --hard origin/devops
 
 echo "의존성 설치 중..."
 source .venv/bin/activate && uv pip install -r pyproject.toml
