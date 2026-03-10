@@ -9,7 +9,7 @@ from services.source import source_service
 router = APIRouter()
 
 @router.get(
-    "/source/{source_id}",
+    "/{notebook_id}",
     response_model=BaseResponse[list[SourceResponse]],
     responses={404: {"model": BaseResponse}},
 )
