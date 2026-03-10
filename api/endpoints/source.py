@@ -2,34 +2,36 @@ from fastapi import APIRouter
 
 from db.database import DbSession
 
-from schemas.services import service 
-from schemas.response import SourceResponse, SourceRequest
+from schemas.source import SourceResponse, SourceUpdateRequest
+from schemas.response import BaseResponse
 from services.source import source_service
 
 router = APIRouter()
 
-
-@router.post("")
-async def run_agent(req: ChatRequest, db: DbSession) -> StreamingResponse:
-    """그래프 실행 과정과 모델 출력을 SSE 프레임으로 스트리밍합니다"""
-    return StreamingResponse(agent_service.stream_chat(req, db), media_type="text/event-stream")
-
-
 @router.get(
-    "/{chat_id}",
-    response_model=BaseResponse[ChatResponse],
+    "/source/{source_id}",
+    response_model=BaseResponse[list[SourceResponse]],
     responses={404: {"model": BaseResponse}},
 )
-def get_chat(chat_id: int, db: DbSession) -> BaseResponse[ChatResponse]:
-    """채팅 ID로 단일 채팅 항목을 조회합니다."""
-    return BaseResponse.ok(chat_service.get_chat(chat_id, db))
+def get_sources_by_notebook(notebook_id: int, db: DbSession) -> BaseResponse[SourceResponse]:
+    """notebook id로 모든 소스를 조회합니다."""
+    return BaseResponse.ok(source_service.get_sources_by_notebook(notebook_id, db))
 
 
-@router.get(
-    "/notebook/{notebook_id}",
-    response_model=BaseResponse[list[ChatResponse]],
+@router.patch(
+    "/{source_id}",
+    response_model=BaseResponse[SourceResponse],
     responses={404: {"model": BaseResponse}},
 )
-def get_chats_by_notebook(notebook_id: int, db: DbSession) -> BaseResponse[list[ChatResponse]]:
-    """주어진 노트북 ID에 속한 모든 채팅을 조회합니다."""
-    return BaseResponse.ok(chat_service.get_chats_by_notebook(notebook_id, db))
+def update_source(source_id: int, body: SourceUpdateRequest, db: DbSession) -> BaseResponse[SourceResponse]:
+    """주어진 소스 ID에 해당하는 소스의 타이틀을 수정합니다."""
+    return BaseResponse.ok(source_service.update_source_title(source_id, body.title, db))
+
+@router.delete(
+    "/{source_id}",
+    response_model=BaseResponse[SourceResponse],
+    responses={404: {"model": BaseResponse}},
+)
+def delete_source(source_id: int, db: DbSession) -> BaseResponse[SourceResponse]:
+    """주어진 소스 ID에 해당하는 소스를 삭제합니다."""
+    return BaseResponse.ok(source_service.delete_source(source_id, db))

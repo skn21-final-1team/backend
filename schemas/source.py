@@ -10,4 +10,8 @@ class SourceResponse(BaseModel):
     summary: str | None = Field(default=None, description="추출된 본문 텍스트")
 
 class SourceRequest(BaseModel):
-    pass
+    id: int
+    title: str = Field(..., description="소스 이름", examples=["Kaggle: Your Home for Data Science"])
+
+class SourceUpdateRequest(BaseModel):
+    title: str = Field(..., description="소스 이름", examples=["Kaggle: Your Home for Data Science"])
