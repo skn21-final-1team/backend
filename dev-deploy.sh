@@ -15,6 +15,9 @@ fi
 echo "기존 서버 종료 중..."
 tmux kill-session -t myserver 2>/dev/null || true
 
+# Git 안전 디렉토리 설정
+git config --global --add safe.directory /home/ubuntu/workspace 2>/dev/null || true
+
 echo "Git Change 진행 중..."
 git switch devops
 
