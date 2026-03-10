@@ -38,7 +38,7 @@ class AgentService:
             version="v2",
             config={
                 "configurable": {
-                    "model_name": "exaone",
+                    "model_name": "gpt-4o-mini",
                 }
             },
         ):
