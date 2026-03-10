@@ -2,9 +2,6 @@
 
 # tmux attach -t myserver
 
-# SSM 세션에서 PATH 설정 (uv 등의 명령어 사용 가능하도록)
-export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:$PATH"
-
 #8000번 포트를 사용하는 프로세스가 있다면 강제 종료 (PID 확인 후 kill)
 PID=$(lsof -t -i:8000)
 if [ -z "$PID" ]; then
@@ -26,9 +23,11 @@ git -c safe.directory=/home/ubuntu/workspace reset --hard origin/devops
 
 echo "의존성 설치 중..."
 source .venv/bin/activate
-uv pip install -r pyproject.toml
+which uv
+$(which uv) pip install -r pyproject.toml
 
 echo "서버 재실행 중..."
-tmux new-session -d -s myserver "source .venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4"
+which tmux
+$(which tmux) new-session -d -s myserver "source .venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4"
 
 echo "배포 완료!"
