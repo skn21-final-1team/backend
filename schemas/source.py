@@ -8,3 +8,6 @@ class SourceResponse(BaseModel):
     url: str = Field(..., description="크롤링한 URL")
     title: str | None = Field(default=None, description="페이지 제목")
     summary: str | None = Field(default=None, description="추출된 본문 텍스트")
+
+class SourceRequest(BaseModel):
+    pass
