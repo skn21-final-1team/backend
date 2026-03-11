@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from .endpoints import auth, chat, directory, health, login, notebook, signup
+from .endpoints import auth, chat, directory, health, login, notebook, signup, source
 
 api_router = APIRouter(redirect_slashes=False)
 
@@ -11,3 +11,5 @@ api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(notebook.router, prefix="/notebook", tags=["notebook"])
 api_router.include_router(directory.router, prefix="/directory", tags=["directory"])
+api_router.include_router(source.router, prefix="/source", tags=["source"])
+

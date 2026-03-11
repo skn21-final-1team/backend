@@ -27,3 +27,22 @@ def create_source(
 def get_sources_by_notebook(db: Session, notebook_id: int) -> Sequence[SourceModel]:
     stmt = select(SourceModel).where(SourceModel.notebook_id == notebook_id)
     return db.scalars(stmt).all()
+
+
+def delete_source_by_source_id(db: Session, source_id: int) -> SourceModel | None:
+    source = db.query(SourceModel).filter(SourceModel.id == source_id).first()
+    if not source:
+        return None
+    db.delete(source)
+    db.commit()
+    return source
+
+
+def update_source_title(db: Session, source_id: int, title: str) -> SourceModel | None:
+    source = db.query(SourceModel).filter(SourceModel.id == source_id).first()
+    if not source:
+        return None
+    source.title = title
+    db.commit()
+    db.refresh(source)
+    return source
