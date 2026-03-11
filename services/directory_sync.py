@@ -46,9 +46,7 @@ class DirectorySyncService:
                     db=db,
                     url=bookmark.url,
                     title=bookmark.title,
-                    summary="",
                     directory_id=parent_id,
-                    is_active=True,
                     notebook_id=notebook_id,
                 )
         db.commit()
