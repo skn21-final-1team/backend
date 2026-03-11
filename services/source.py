@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 
 from core.exceptions.source import SourceNotFoundException
 from crud.source import (
-    get_sources_by_notebook,
     delete_source_by_source_id,
-    update_source_title,
+    get_sources_by_notebook,
+    update_source,
 )
 from models.source import SourceModel
+from schemas.source import SourceUpdateRequest
 
 
 class SourceService:
@@ -21,8 +22,13 @@ class SourceService:
             raise SourceNotFoundException
         return source
 
-    def update_source_title(self, source_id: int, title: str, db: Session) -> SourceModel:
-        source = update_source_title(db, source_id, title)
+    def update_source_data(
+        self,
+        source_id: int,
+        body: SourceUpdateRequest,
+        db: Session,
+    ) -> SourceModel:
+        source = update_source(db, source_id, body.title, body.is_active)
         if not source:
             raise SourceNotFoundException
         return source

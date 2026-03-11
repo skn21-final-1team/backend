@@ -38,11 +38,17 @@ def delete_source_by_source_id(db: Session, source_id: int) -> SourceModel | Non
     return source
 
 
-def update_source_title(db: Session, source_id: int, title: str) -> SourceModel | None:
+def update_source(
+    db: Session, source_id: int, title: str | None = None, is_active: bool | None = None
+) -> SourceModel | None:
+
     source = db.query(SourceModel).filter(SourceModel.id == source_id).first()
     if not source:
         return None
-    source.title = title
+    if title is not None:
+        source.title = title
+    if is_active is not None:
+        source.is_active = is_active
     db.commit()
     db.refresh(source)
     return source
