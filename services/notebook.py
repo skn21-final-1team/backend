@@ -6,9 +6,10 @@ from crud.notebook import (
     delete_notebook,
     get_notebook,
     get_notebooks_by_user_id,
-    update_notebook_title,
+    update_notebook,
 )
 from models.notebook import NotebookModel
+from schemas.notebook import NotebookUpdateBody
 
 
 class NotebookService:
@@ -24,8 +25,8 @@ class NotebookService:
     def create_notebook(self, user_id: int, title: str, db: Session) -> NotebookModel:
         return create_notebook(db, user_id, title)
 
-    def update_notebook_title(self, notebook_id: int, title: str, db: Session) -> NotebookModel:
-        notebook = update_notebook_title(db, notebook_id, title)
+    def update_notebook(self, notebook_id: int, body: NotebookUpdateBody, db: Session) -> NotebookModel:
+        notebook = update_notebook(db, notebook_id, body)
         if not notebook:
             raise NotebookNotFoundException
         return notebook

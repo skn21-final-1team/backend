@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 
 from core.auth_guard import get_current_user
 from db.database import DbSession
-from schemas.notebook import NotebookRequest, NotebookResponse, NotebookUpdateRequest
+from schemas.notebook import NotebookRequest, NotebookResponse, NotebookUpdateBody
 from schemas.response import BaseResponse
 from services.notebook import notebook_service
 
@@ -43,8 +43,8 @@ def get_notebook(notebook_id: int, db: DbSession) -> BaseResponse[NotebookRespon
     response_model=BaseResponse[NotebookResponse],
     responses={404: {"model": BaseResponse}},
 )
-def update_notebook(notebook_id: int, body: NotebookUpdateRequest, db: DbSession) -> BaseResponse[NotebookResponse]:
-    return BaseResponse.ok(notebook_service.update_notebook_title(notebook_id, body.title, db))
+def update_notebook(notebook_id: int, body: NotebookUpdateBody, db: DbSession) -> BaseResponse[NotebookResponse]:
+    return BaseResponse.ok(notebook_service.update_notebook(notebook_id, body, db))
 
 
 @router.delete(
