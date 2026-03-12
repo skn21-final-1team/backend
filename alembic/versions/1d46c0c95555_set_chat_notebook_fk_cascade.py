@@ -19,6 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    op.execute('CREATE EXTENSION IF NOT EXISTS vector')
     op.drop_constraint("chat_notebook_id_fkey", "chat", type_="foreignkey")
     op.create_foreign_key(
         "chat_notebook_id_fkey",
