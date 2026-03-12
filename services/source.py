@@ -45,6 +45,7 @@ class SourceService:
         source = create_source(db, body.url, body.title, body.directory_id, notebook_id)
         if not notebook_id:
             raise NotebookNotFoundException
+        db.commit()
         return source
 
 
