@@ -9,7 +9,7 @@ from crud.notebook import (
     update_notebook,
 )
 from models.notebook import NotebookModel
-from schemas.notebook import NotebookUpdateBody
+from schemas.notebook import NotebookSortType, NotebookUpdateBody
 
 
 class NotebookService:
@@ -19,8 +19,13 @@ class NotebookService:
             raise NotebookNotFoundException
         return notebook
 
-    def get_notebooks_by_user(self, user_id: int, db: Session) -> list[NotebookModel]:
-        return get_notebooks_by_user_id(db, user_id)
+    def get_notebooks_by_user(
+        self,
+        user_id: int,
+        db: Session,
+        sort_type: NotebookSortType = NotebookSortType.RECENT_CREATED,
+    ) -> list[NotebookModel]:
+        return get_notebooks_by_user_id(db, user_id, sort_type)
 
     def create_notebook(self, user_id: int, title: str, db: Session) -> NotebookModel:
         return create_notebook(db, user_id, title)

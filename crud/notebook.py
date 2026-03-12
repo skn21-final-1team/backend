@@ -1,15 +1,25 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models.notebook import NotebookModel
-from schemas.notebook import NotebookUpdateBody
+from schemas.notebook import NotebookSortType, NotebookUpdateBody
 
 
 def get_notebook(db: Session, notebook_id: int) -> NotebookModel | None:
     return db.query(NotebookModel).filter(NotebookModel.id == notebook_id).first()
 
 
-def get_notebooks_by_user_id(db: Session, user_id: int) -> list[NotebookModel]:
-    return db.query(NotebookModel).filter(NotebookModel.user_id == user_id).all()
+def get_notebooks_by_user_id(
+    db: Session,
+    user_id: int,
+    sort_type: NotebookSortType = NotebookSortType.RECENT_CREATED,
+) -> list[NotebookModel]:
+    order_by_list = {
+        NotebookSortType.RECENT_CREATED: (NotebookModel.created_at.desc().nullslast(), NotebookModel.id.desc()),
+        NotebookSortType.CREATED_AT: (NotebookModel.created_at.asc().nullsfirst(), NotebookModel.id.asc()),
+        NotebookSortType.NAME: (func.lower(NotebookModel.title).asc(), NotebookModel.id.asc()),
+    }
+    return db.query(NotebookModel).filter(NotebookModel.user_id == user_id).order_by(*order_by_list[sort_type]).all()
 
 
 def create_notebook(db: Session, user_id: int, title: str = "Notebook-1") -> NotebookModel:

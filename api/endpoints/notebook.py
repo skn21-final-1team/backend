@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Request
+from typing import Annotated
+
+from fastapi import APIRouter, Query, Request
 
 from core.auth_guard import get_current_user
 from db.database import DbSession
-from schemas.notebook import NotebookRequest, NotebookResponse, NotebookUpdateBody
+from schemas.notebook import NotebookRequest, NotebookResponse, NotebookSortType, NotebookUpdateBody
 from schemas.response import BaseResponse
 from services.notebook import notebook_service
 
@@ -24,9 +26,19 @@ def create_notebook(req: Request, body: NotebookRequest, db: DbSession) -> BaseR
     response_model=BaseResponse[list[NotebookResponse]],
     responses={404: {"model": BaseResponse}},
 )
-def get_notebooks(request: Request, db: DbSession) -> BaseResponse[list[NotebookResponse]]:
+def get_notebooks(
+    request: Request,
+    db: DbSession,
+    sort: Annotated[
+        NotebookSortType,
+        Query(
+            description="정렬 방식 (recent | created_at | name)",
+        ),
+    ] = NotebookSortType.RECENT_CREATED,
+) -> BaseResponse[list[NotebookResponse]]:
+    """현재 사용자 노트북 목록을 정렬 기준에 맞춰 반환한다."""
     user = get_current_user(request)
-    return BaseResponse.ok(notebook_service.get_notebooks_by_user(user.id, db))
+    return BaseResponse.ok(notebook_service.get_notebooks_by_user(user.id, db, sort))
 
 
 @router.get(

@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
@@ -12,6 +13,12 @@ class NotebookResponse(BaseModel):
     title: str
     pinned: bool
     created_at: datetime = Field(..., description="노트북 생성 시간", examples=["2024-01-01T12:00:00Z"])
+
+
+class NotebookSortType(StrEnum):
+    RECENT_CREATED = "recent"
+    CREATED_AT = "created_at"
+    NAME = "name"
 
 
 class NotebookUpdateBody(BaseModel):
