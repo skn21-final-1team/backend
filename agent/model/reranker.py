@@ -28,14 +28,21 @@ class Reranker:
             httpx.HTTPStatusError: 서버 응답이 4xx/5xx인 경우.
         """
 
-        payload = {"query": query, "documents": documents, "top_k": self.CONFIG["top_k"]}
+        try:
+            payload = {"query": query, "documents": documents, "top_k": self.CONFIG["top_k"]}
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(self.CONFIG["url"], json={"input": payload}, headers=self.CONFIG["headers"])
-            response.raise_for_status()
-            data = response.json()
-            output = data.get("output", [])
-            return [v.get("document", "") for v in output]
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.post(
+                    self.CONFIG["url"], json={"input": payload}, headers=self.CONFIG["headers"]
+                )
+                response.raise_for_status()
+                data = response.json()
+                output = data.get("output", [])
+                print("Reranker response data:", output)
+                return [v.get("document", "") for v in output]
+        except httpx.HTTPStatusError as e:
+            print(f"Reranker API error: {e.response.status_code} - {e.response.text}")
+            return []
 
 
 reranker = Reranker()

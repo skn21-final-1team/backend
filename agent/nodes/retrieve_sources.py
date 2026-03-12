@@ -5,6 +5,8 @@ from agent.model.embedding import embeddings
 from agent.model.reranker import reranker
 from agent.state import QAState
 from core.config import get_settings
+from crud.source import get_active_source_ids, get_source_ids_by_notebook
+from db.database import get_db_context
 
 settings = get_settings()
 
@@ -20,15 +22,36 @@ vector_store = PGVector(
 
 
 async def retrieve_sources(state: QAState) -> dict[str, list[str]]:
-    try:
-        question = state["question"]
-        retriever = vector_store.as_retriever(search_kwargs={"k": 10})
+    notebook_id = state["notebook_id"]
+    question = state["question"]
 
-        docs = await retriever.ainvoke(question)
-        contents = [doc.page_content for doc in docs]
+    with get_db_context() as db:
+        notebook_source_ids = get_source_ids_by_notebook(db, notebook_id)
+        if not notebook_source_ids:
+            return {"sources": []}
 
-        reranked = await reranker.rerank(question, contents)
-        return {"sources": reranked}
-    except Exception as e:
-        print("Error in retrieve_sources:", e)
-        return {"sources": []}
+        active_source_ids = get_active_source_ids(db, notebook_source_ids)
+        if not active_source_ids:
+            return {"sources": []}
+
+    print("Active source IDs:", active_source_ids)
+
+    retriever = vector_store.as_retriever(
+        search_kwargs={
+            "k": 10,
+            "filter": {
+                "source_id": {
+                    "$in": active_source_ids,
+                }
+            },
+        }
+    )
+
+    docs = await retriever.ainvoke(question)
+    contents = [doc.page_content for doc in docs]
+
+    if len(contents) < 5:
+        return {"sources": contents}
+
+    reranked = await reranker.rerank(question, contents)
+    return {"sources": reranked}
