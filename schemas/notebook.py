@@ -8,6 +8,8 @@ class NotebookRequest(BaseModel):
 class NotebookResponse(BaseModel):
     id: int
     title: str
+    pinned: bool
+    created_at: str
 
 
 class NotebookUpdateRequest(BaseModel):

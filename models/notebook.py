@@ -11,4 +11,4 @@ class NotebookModel(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
-    pined = Column(Boolean, nullable=False, default=False)
+    pinned = Column(Boolean, nullable=False, default=False)
