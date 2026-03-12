@@ -2,20 +2,20 @@ from fastapi import APIRouter
 
 from db.database import DbSession
 from schemas.response import BaseResponse
-from schemas.source import SourceResponse, SourceUpdateRequest
+from schemas.source import SourceResponse, SourceUpdateRequest, SourceAddRequest
 from services.source import source_service
 
 router = APIRouter()
 
 
-@router.get(
-    "/{notebook_id}",
-    response_model=BaseResponse[list[SourceResponse]],
+@router.post(
+    "/add",
+    response_model=BaseResponse[SourceResponse],
     responses={404: {"model": BaseResponse}},
 )
-def get_sources_by_notebook(notebook_id: int, db: DbSession) -> BaseResponse[SourceResponse]:
-    """notebook id로 모든 소스를 조회합니다."""
-    return BaseResponse.ok(source_service.get_sources_by_notebook(notebook_id, db))
+def create_source(notebook_id: int, body: SourceAddRequest, db: DbSession) -> BaseResponse[SourceResponse]:
+    """입력한 URL에 해당하는 소스를 추가합니다."""
+    return BaseResponse.ok(source_service.create_source_by_url(notebook_id, body, db))
 
 
 @router.patch(
