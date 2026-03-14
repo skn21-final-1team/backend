@@ -26,4 +26,4 @@ class SourceAddRequest(BaseModel):
     url: str = Field(..., description="크롤링한 URL")
     is_active: bool | None = Field(default=None, description="소스 활성화 여부")
     directory_id: int | None = Field(default=None, description="소스의 부모 디렉토리 id")
-    notebook_id: int = Field(..., description="크롤링한 URL")
+    notebook_id: int = Field(..., description="노트북 id")
