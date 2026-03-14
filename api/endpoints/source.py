@@ -13,9 +13,9 @@ router = APIRouter()
     response_model=BaseResponse[SourceResponse],
     responses={404: {"model": BaseResponse}},
 )
-def create_source(notebook_id: int, body: SourceAddRequest, db: DbSession) -> BaseResponse[SourceResponse]:
+def create_source(body: SourceAddRequest, db: DbSession) -> BaseResponse[SourceResponse]:
     """입력한 URL에 해당하는 소스를 추가합니다."""
-    return BaseResponse.ok(source_service.create_source_by_url(notebook_id, body, db))
+    return BaseResponse.ok(source_service.create_source_by_url(body, db))
 
 
 @router.patch(

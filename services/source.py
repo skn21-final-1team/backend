@@ -13,6 +13,11 @@ from crud.source import (
 )
 from models.source import SourceModel
 from schemas.source import SourceUpdateRequest, SourceAddRequest
+from schemas.crawl import CrawlRequestBody
+
+from core.config import get_settings
+
+settings = get_settings()
 
 
 class SourceService:
@@ -36,14 +41,16 @@ class SourceService:
             raise SourceNotFoundException
         return source
 
+    def crawl_endpoint(self, body: CrawlRequestBody, settings):
+        pass
+
     def create_source_by_url(
         self,
-        notebook_id: int,
         body: SourceAddRequest,
         db: Session
     ) -> SourceModel:
-        source = create_source(db, body.url, body.title, body.directory_id, notebook_id)
-        if not notebook_id:
+        source = create_source(db, body.url, body.title, body.directory_id, body.notebook_id)
+        if not body.notebook_id:
             raise NotebookNotFoundException
         db.commit()
         return source
