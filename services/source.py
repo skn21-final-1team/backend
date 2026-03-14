@@ -46,12 +46,11 @@ class SourceService:
 
     def create_source_by_url(
         self,
-        notebook_id: int,
         body: SourceAddRequest,
         db: Session
     ) -> SourceModel:
-        source = create_source(db, body.url, body.title, body.directory_id, notebook_id)
-        if not notebook_id:
+        source = create_source(db, body.url, body.title, body.directory_id, body.notebook_id)
+        if not body.notebook_id:
             raise NotebookNotFoundException
         db.commit()
         return source
