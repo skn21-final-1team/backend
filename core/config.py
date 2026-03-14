@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     database_url: str = Field(default="", alias="DATABASE_URL")
+    crawl_url: str = Field(default="", alias="CRAWL_URL")
     async_database_url: str = Field(default="", alias="ASYNC_DATABASE_URL")
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(default="", alias="GOOGLE_CLIENT_SECRET")
@@ -31,7 +32,6 @@ class Settings(BaseSettings):
     reranker_url: str = Field(default="", alias="RERANKER_MODEL_URL")
     custom_llm_url: str = Field(default="", alias="CUSTOM_LLM_MODEL_URL")
     runpod_api_key: str = Field(default="", alias="RUNPOD_API_KEY")
-
     backend_cors_origins: list[str] = Field(default=["http://localhost:3000"], alias="BACKEND_CORS_ORIGINS")
 
 
