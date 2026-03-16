@@ -32,8 +32,13 @@ class SourceResponse(BaseModel):
     directory_id: int | None
     is_active: bool
     created_at: datetime
+    status: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DirectoryUpdateRequest(BaseModel):
+    title: str = Field(..., min_length=1, description="변경할 디렉토리 이름")
 
 
 class DirectoryResponse(BaseModel):

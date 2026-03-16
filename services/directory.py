@@ -1,6 +1,11 @@
 from sqlalchemy.orm import Session
 
-from crud.directory import get_directories_by_notebook
+from core.exceptions.directory import DirectoryNotFoundException
+from crud.directory import (
+    delete_directory,
+    get_directories_by_notebook,
+    update_directory,
+)
 from crud.source import get_sources_by_notebook
 from schemas.directory import DirectoryResponse, DirectoryTreeResponse, SourceResponse
 
@@ -51,6 +56,19 @@ class DirectoryService:
             directories=root_directories,
             sources=unassigned_sources,
         )
+
+
+    def rename_directory(self, db: Session, directory_id: int, title: str) -> DirectoryResponse:
+        directory = update_directory(db, directory_id, title)
+        if not directory:
+            raise DirectoryNotFoundException()
+        return DirectoryResponse.model_validate(directory)
+
+    def delete_directory(self, db: Session, directory_id: int) -> DirectoryResponse:
+        directory = delete_directory(db, directory_id)
+        if not directory:
+            raise DirectoryNotFoundException()
+        return DirectoryResponse.model_validate(directory)
 
 
 directory_service = DirectoryService()
