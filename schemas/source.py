@@ -9,6 +9,7 @@ class SourceResponse(BaseModel):
     title: str | None = Field(default=None, description="페이지 제목")
     summary: str | None = Field(default=None, description="추출된 본문 텍스트")
     is_active: bool = Field(..., description="소스 활성화 여부")
+    status: str | None = Field(..., description="소스 처리 상태")
 
 
 class SourceRequest(BaseModel):
