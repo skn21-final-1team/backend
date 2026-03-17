@@ -16,3 +16,24 @@ def create_directory(db: Session, title: str, notebook_id: int, parent_id: int |
 def get_directories_by_notebook(db: Session, notebook_id: int) -> Sequence[DirectoryModel]:
     stmt = select(DirectoryModel).where(DirectoryModel.notebook_id == notebook_id)
     return db.scalars(stmt).all()
+
+
+def update_directory(db: Session, directory_id: int, title: str) -> DirectoryModel | None:
+    stmt = select(DirectoryModel).where(DirectoryModel.id == directory_id)                                      
+    directory = db.scalars(stmt).first()
+    if not directory:
+        return None
+    directory.title = title
+    db.commit()
+    db.refresh(directory)
+    return directory
+
+
+def delete_directory(db: Session, directory_id: int) -> DirectoryModel | None:
+    stmt = select(DirectoryModel).where(DirectoryModel.id == directory_id)                                      
+    directory = db.scalars(stmt).first()
+    if not directory:
+        return None
+    db.delete(directory)
+    db.commit()
+    return directory

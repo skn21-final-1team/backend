@@ -6,7 +6,9 @@ from schemas.directory import (
     DirectorySyncKeyRequest,
     DirectorySyncKeyResponse,
     DirectorySyncRequest,
+    DirectoryResponse,
     DirectoryTreeResponse,
+    DirectoryUpdateRequest,
 )
 from schemas.response import BaseResponse
 from services.directory import directory_service
@@ -36,6 +38,35 @@ def sync_directory_data(body: DirectorySyncRequest, db: DbSession):
     """extension 에서 북마크 동기화 호출용"""
     directory_sync_service.sync_bookmarks(body.sync_key, body.bookmarks, db)
     return BaseResponse.ok(data=None)
+
+
+@router.patch(
+    "/{directory_id}",
+    response_model=BaseResponse[DirectoryResponse],
+    responses={404: {"model": BaseResponse}},
+)
+def rename_directory(
+    directory_id: int,
+    body: DirectoryUpdateRequest,
+    db: DbSession,
+    request: Request,
+) -> BaseResponse[DirectoryResponse]:
+    get_current_user(request)
+    return BaseResponse.ok(directory_service.rename_directory(db, directory_id, body.title))
+
+
+@router.delete(
+    "/{directory_id}",
+    response_model=BaseResponse[DirectoryResponse],
+    responses={404: {"model": BaseResponse}},
+)
+def delete_directory(
+    directory_id: int,
+    db: DbSession,
+    request: Request,
+) -> BaseResponse[DirectoryResponse]:
+    get_current_user(request)
+    return BaseResponse.ok(directory_service.delete_directory(db, directory_id))
 
 
 @router.get(
