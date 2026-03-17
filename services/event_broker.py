@@ -1,7 +1,9 @@
 import asyncio
 import json
 from collections.abc import AsyncGenerator
+import logging
 
+logger = logging.getLogger(__name__)
 
 class EventBroker:
     """In-memory pub/sub 이벤트 브로커. Webhook → SSE 브릿지."""
@@ -27,6 +29,7 @@ class EventBroker:
 
     async def publish(self, event: dict) -> None:
         """Webhook에서 호출. 모든 subscriber에게 이벤트를 전달한다."""
+        logger.info("crawl callback event: %s", event)
         for queue in self._subscribers.values():
             await queue.put(event)
 
