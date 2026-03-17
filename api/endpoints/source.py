@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from db.database import DbSession
 from schemas.response import BaseResponse
 from schemas.source import SourceResponse, SourceUpdateRequest, SourceAddRequest
+
 from services.source import source_service
 
 router = APIRouter()
@@ -13,9 +14,9 @@ router = APIRouter()
     response_model=BaseResponse[SourceResponse],
     responses={404: {"model": BaseResponse}},
 )
-def create_source(body: SourceAddRequest, db: DbSession) -> BaseResponse[SourceResponse]:
+async def create_source(body: SourceAddRequest, db: DbSession) -> BaseResponse[SourceResponse]:
     """입력한 URL에 해당하는 소스를 추가합니다."""
-    return BaseResponse.ok(source_service.create_source_by_url(body, db))
+    return BaseResponse.ok(await source_service.create_source_by_url(body, db))
 
 
 @router.patch(

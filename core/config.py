@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     database_url: str = Field(default="", alias="DATABASE_URL")
-    crawl_url: str = Field(default="", alias="CRAWL_URL")
     async_database_url: str = Field(default="", alias="ASYNC_DATABASE_URL")
     google_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
     google_client_secret: str = Field(default="", alias="GOOGLE_CLIENT_SECRET")
