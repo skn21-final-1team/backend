@@ -6,3 +6,18 @@ class CrawlRequestBody(BaseModel):
     notebook_id: int
     directory_id: int | None = None
     source_id: int
+
+
+class CrawlSourceItem(BaseModel):
+    source_id: int
+    url: str
+
+
+class CrawlNewRequest(BaseModel):
+    sources: list[CrawlSourceItem]
+
+
+class CrawlResponse(BaseModel):
+    status: str
+    accepted: list[int]
+    not_found: list[int]

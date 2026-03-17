@@ -2,6 +2,7 @@ from collections.abc import Sequence
 
 from sqlalchemy.orm import Session
 
+from core.exceptions.crawl import CrawlFailedException
 from core.exceptions.source import SourceNotFoundException
 from core.exceptions.notebook import NotebookNotFoundException
 
@@ -13,12 +14,8 @@ from crud.source import (
 )
 from models.source import SourceModel
 from schemas.source import SourceUpdateRequest, SourceAddRequest
-from schemas.crawl import CrawlRequestBody
+from schemas.crawl import CrawlSourceItem, CrawlNewRequest
 from services.crawl import crawl_service
-
-from core.config import get_settings
-
-settings = get_settings()
 
 
 class SourceService:
@@ -42,9 +39,6 @@ class SourceService:
             raise SourceNotFoundException
         return source
 
-    def crawl_endpoint(self, body: CrawlRequestBody, settings):
-        pass
-
     async def create_source_by_url(
         self,
         body: SourceAddRequest,
@@ -56,13 +50,13 @@ class SourceService:
         source = create_source(db, body.url, body.title, body.directory_id, body.notebook_id)
         db.commit()
 
-        crawl_body = CrawlRequestBody(
-            urls=[body.url],
-            notebook_id=body.notebook_id,
-            directory_id=body.directory_id,
-            source_id=source.id,
+        crawl_body = CrawlNewRequest(
+            sources=[CrawlSourceItem(source_id=source.id, url=body.url)]
         )
-        await crawl_service.crawl_and_save(crawl_body)
+        crawl_response = await crawl_service.request_crawl(crawl_body)
+
+        if source.id in crawl_response.not_found:
+            raise CrawlFailedException
 
         return source
 
