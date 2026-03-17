@@ -29,9 +29,9 @@ class CrawlService:
                 response.raise_for_status()
                 return CrawlResponse.model_validate(response.json())
         except ConnectError:
-            raise FirecrawlConnectionException
+            raise FirecrawlConnectionException from None
         except HTTPStatusError:
-            raise CrawlFailedException
+            raise CrawlFailedException from None
 
 
 crawl_service = CrawlService()
