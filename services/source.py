@@ -50,15 +50,17 @@ class SourceService:
         body: SourceAddRequest,
         db: Session
     ) -> SourceModel:
-        source = create_source(db, body.url, body.title, body.directory_id, body.notebook_id)
         if not body.notebook_id:
             raise NotebookNotFoundException
+
+        source = create_source(db, body.url, body.title, body.directory_id, body.notebook_id)
         db.commit()
 
         crawl_body = CrawlRequestBody(
             urls=[body.url],
             notebook_id=body.notebook_id,
             directory_id=body.directory_id,
+            source_id=source.id,
         )
         await crawl_service.crawl_and_save(crawl_body)
 
