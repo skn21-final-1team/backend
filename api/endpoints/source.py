@@ -1,9 +1,12 @@
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 
+from core.auth_guard import public
 from db.database import DbSession
+from schemas.crawl import CrawlCallbackEvent
 from schemas.response import BaseResponse
 from schemas.source import SourceResponse, SourceUpdateRequest, SourceAddRequest
-
+from services.event_broker import event_broker
 from services.source import source_service
 
 router = APIRouter()
@@ -38,3 +41,17 @@ def update_source(source_id: int, body: SourceUpdateRequest, db: DbSession) -> B
 def delete_source(source_id: int, db: DbSession) -> BaseResponse[SourceResponse]:
     """주어진 소스 ID에 해당하는 소스를 삭제합니다."""
     return BaseResponse.ok(source_service.delete_source(source_id, db))
+
+
+@router.post("/callback")
+@public
+async def crawl_callback(body: CrawlCallbackEvent) -> dict:
+    """Crawl 서버에서 호출하는 webhook 콜백. 이벤트를 SSE 구독자에게 전달합니다."""
+    await event_broker.publish(body.model_dump())
+    return {"status": "ok"}
+
+
+@router.get("/stream")
+async def source_stream() -> StreamingResponse:
+    """SSE 스트림. 프론트엔드가 crawl 이벤트를 실시간으로 수신합니다."""
+    return StreamingResponse(event_broker.subscribe(), media_type="text/event-stream")

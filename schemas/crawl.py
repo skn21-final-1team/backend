@@ -21,3 +21,10 @@ class CrawlResponse(BaseModel):
     status: str
     accepted: list[int]
     not_found: list[int]
+
+
+class CrawlCallbackEvent(BaseModel):
+    source_id: int
+    event: str
+    stage: str | None = None
+    error: str | None = None
