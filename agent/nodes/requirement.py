@@ -38,6 +38,6 @@ async def analyze_requirement(state: WorkflowState, config: RunnableConfig) -> d
         "outline_text": "",
         "draft_text": "",
         "final_text": "",
-        "system_message": requirements_text,
+        "system_message": "요구사항 분석을 완료했습니다. 내용을 검토해 주세요.",
         "last_user_request": base_request,
     }

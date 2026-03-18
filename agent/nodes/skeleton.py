@@ -37,5 +37,5 @@ async def build_skeleton(state: WorkflowState, config: RunnableConfig) -> dict:
         "outline_text": outline_text,
         "draft_text": "",
         "final_text": "",
-        "system_message": outline_text,
+        "system_message": "문서 개요 생성을 완료했습니다. 내용을 검토해 주세요.",
     }

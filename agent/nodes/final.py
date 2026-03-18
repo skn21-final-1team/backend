@@ -37,5 +37,5 @@ async def finalize_report(state: WorkflowState, config: RunnableConfig) -> dict:
         "step": 4,
         "awaiting_action": "approval",
         "final_text": final_text,
-        "system_message": final_text,
+        "system_message": "최종 문서 생성을 완료했습니다. 내용을 검토해 주세요.",
     }

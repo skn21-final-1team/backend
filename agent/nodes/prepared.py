@@ -37,5 +37,5 @@ async def prepare_draft(state: WorkflowState, config: RunnableConfig) -> dict:
         "awaiting_action": "approval",
         "draft_text": draft_text,
         "final_text": "",
-        "system_message": draft_text,
+        "system_message": "초안 작성을 완료했습니다. 내용을 검토해 주세요.",
     }
