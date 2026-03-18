@@ -20,6 +20,8 @@ vector_store = PGVector(
     create_extension=False,
 )
 
+_MIN_CONTENT_COUNT_FOR_RERANK = 5
+
 
 async def retrieve_sources(state: QAState) -> dict[str, list[str]]:
     notebook_id = state["notebook_id"]
@@ -50,7 +52,7 @@ async def retrieve_sources(state: QAState) -> dict[str, list[str]]:
     docs = await retriever.ainvoke(question)
     contents = [doc.page_content for doc in docs]
 
-    if len(contents) < 5:
+    if len(contents) < _MIN_CONTENT_COUNT_FOR_RERANK:
         return {"sources": contents}
 
     reranked = await reranker.rerank(question, contents)

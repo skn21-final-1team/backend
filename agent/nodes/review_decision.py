@@ -24,6 +24,8 @@ _CURRENT_OUTPUT_FIELD_BY_STEP = {
     4: "final_text",
 }
 
+_FINAL_STEP = 4
+
 
 class ReviewDecisionPayload(BaseModel):
     action: str = Field(description="approve, revise, reset 중 하나")
@@ -116,7 +118,7 @@ async def review_decision(state: WorkflowState, config: RunnableConfig) -> dict[
 
     updates: dict[str, object] = {
         "action": action,
-        "status": "completed" if action == "approve" and step >= 4 else "in_progress",
+        "status": "completed" if action == "approve" and step >= _FINAL_STEP else "in_progress",
         "awaiting_action": "none",
         "system_message": summary,
     }

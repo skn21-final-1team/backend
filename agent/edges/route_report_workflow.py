@@ -16,6 +16,8 @@ _NEXT_NODE_BY_STEP = {
     3: "final",
 }
 
+_FINAL_STEP = 4
+
 
 def route_report_workflow(state: WorkflowState) -> str:
     action = str(state.get("action", "")).strip().lower()
@@ -28,7 +30,7 @@ def route_report_workflow(state: WorkflowState) -> str:
         return _STEP_NODE_BY_STEP.get(step, "requirement")
 
     if action == "approve":
-        if step >= 4:
+        if step >= _FINAL_STEP:
             return END
         return _NEXT_NODE_BY_STEP.get(step, "requirement")
 
