@@ -24,5 +24,5 @@ async def build_skeleton(state: WorkflowState, config: RunnableConfig) -> dict:
         "status": "in_progress",
         "step": 2,
         "outline_text": outline_text,
-        "system_message": outline_text,
+        "system_message": "문서 구성 및 설정 단계가 완료되었습니다. 다음 단계로 진행할지 결정해주세요.",
     }

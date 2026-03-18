@@ -27,6 +27,6 @@ async def finalize_report(state: WorkflowState, config: RunnableConfig) -> dict:
         "status": "completed",
         "step": 4,
         "final_text": final_text,
-        "system_message": final_text,
+        "system_message": "최종안 작성 단계가 완료되었습니다. 에이전트를 종료할까요?",
         "last_approved_step": 4,
     }

@@ -25,5 +25,5 @@ async def prepare_draft(state: WorkflowState, config: RunnableConfig) -> dict:
         "status": "in_progress",
         "step": 3,
         "draft_text": draft_text,
-        "system_message": draft_text,
+        "system_message": "초안 작성 단계가 완료되었습니다. 다음 단계로 진행할지 결정해주세요.",
     }

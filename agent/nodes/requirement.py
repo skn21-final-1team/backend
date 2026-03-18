@@ -26,6 +26,6 @@ async def analyze_requirement(state: WorkflowState, config: RunnableConfig) -> d
         "step": 1,
         "awaiting_action": "none",
         "requirements_text": requirements_text,
-        "system_message": requirements_text,
+        "system_message": "요구 사항 분석 단계가 완료되었습니다. 다음 단계로 진행할지 결정해주세요.",
         "last_user_request": state["message"],
     }
