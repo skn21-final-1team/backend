@@ -7,9 +7,10 @@ from api.route import api_router
 from core.auth_guard import AuthMiddleware
 from core.config import get_settings
 from core.exceptions.exception_handlers import init_exception_handlers
+from core.logging import setup_logging
 from db.database import Base, engine
 
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
