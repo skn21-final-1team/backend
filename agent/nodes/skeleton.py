@@ -6,14 +6,24 @@ from agent.prompts.report_workflow import SKELETON_SYSTEM_PROMPT, SKELETON_USER_
 from agent.workflow_state import WorkflowState
 
 
+def _revision_request_text(state: WorkflowState) -> str:
+    revision_request = state.get("last_revision_request")
+    if isinstance(revision_request, str) and revision_request.strip():
+        return revision_request
+    return "없음"
+
+
 async def build_skeleton(state: WorkflowState, config: RunnableConfig) -> dict:
+    base_request = state.get("last_user_request") or state["message"]
     llm = llm_factory.get_llm(config)
     response = await llm.ainvoke(
         [
             SystemMessage(content=SKELETON_SYSTEM_PROMPT),
             HumanMessage(
                 content=SKELETON_USER_PROMPT.format(
-                    requirements_text=state["requirements_text"],
+                    base_request=base_request,
+                    revision_request=_revision_request_text(state),
+                    requirements_text=state.get("requirements_text", "없음"),
                 )
             ),
         ]
@@ -21,8 +31,11 @@ async def build_skeleton(state: WorkflowState, config: RunnableConfig) -> dict:
 
     outline_text = response.content
     return {
-        "status": "in_progress",
+        "status": "awaiting_review",
         "step": 2,
+        "awaiting_action": "approval",
         "outline_text": outline_text,
-        "system_message": "문서 구성 및 설정 단계가 완료되었습니다. 다음 단계로 진행할지 결정해주세요.",
+        "draft_text": "",
+        "final_text": "",
+        "system_message": outline_text,
     }

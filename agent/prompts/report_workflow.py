@@ -7,8 +7,11 @@ REQUIREMENT_SYSTEM_PROMPT = """
 REQUIREMENT_USER_PROMPT = """
 다음 정보를 바탕으로 문서 요구사항을 분석해라.
 
-## 사용자 요청
-{message}
+## 최초 사용자 요청
+{base_request}
+
+## 최신 수정 요청
+{revision_request}
 
 ## 참고 source snapshot
 {source_snapshot}
@@ -27,6 +30,13 @@ SKELETON_SYSTEM_PROMPT = """
 SKELETON_USER_PROMPT = """
 다음 요구사항 분석을 기반으로 최종 문서의 간략한 목차를 작성해라.
 
+## 최초 사용자 요청
+{base_request}
+
+## 최신 수정 요청
+{revision_request}
+
+## Requirement Analysis
 {requirements_text}
 
 출력 규칙:
@@ -43,6 +53,12 @@ PREPARED_SYSTEM_PROMPT = """
 
 PREPARED_USER_PROMPT = """
 다음 뼈대를 기준으로 초안을 준비해라.
+
+## 최초 사용자 요청
+{base_request}
+
+## 최신 수정 요청
+{revision_request}
 
 ## Skeleton
 {outline_text}
@@ -64,8 +80,11 @@ FINAL_SYSTEM_PROMPT = """
 FINAL_USER_PROMPT = """
 다음 정보를 바탕으로 최종 문서를 완성해라.
 
-## 사용자 요청
-{message}
+## 최초 사용자 요청
+{base_request}
+
+## 최신 수정 요청
+{revision_request}
 
 ## Requirement Analysis
 {requirements_text}

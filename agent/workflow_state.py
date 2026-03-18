@@ -2,7 +2,7 @@ from typing import Literal, TypedDict
 
 from schemas.report_workflow import AwaitingAction, WorkflowStatus
 
-WorkflowAction = Literal["approve", "reset", "revise", "answer_clarification"]
+WorkflowAction = Literal["approve", "reset", "revise"]
 WorkflowStep = Literal[1, 2, 3, 4]
 
 

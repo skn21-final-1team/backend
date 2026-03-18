@@ -6,14 +6,23 @@ from agent.prompts.report_workflow import REQUIREMENT_SYSTEM_PROMPT, REQUIREMENT
 from agent.workflow_state import WorkflowState
 
 
+def _revision_request_text(state: WorkflowState) -> str:
+    revision_request = state.get("last_revision_request")
+    if isinstance(revision_request, str) and revision_request.strip():
+        return revision_request
+    return "없음"
+
+
 async def analyze_requirement(state: WorkflowState, config: RunnableConfig) -> dict:
+    base_request = state.get("last_user_request") or state["message"]
     llm = llm_factory.get_llm(config)
     response = await llm.ainvoke(
         [
             SystemMessage(content=REQUIREMENT_SYSTEM_PROMPT),
             HumanMessage(
                 content=REQUIREMENT_USER_PROMPT.format(
-                    message=state["message"],
+                    base_request=base_request,
+                    revision_request=_revision_request_text(state),
                     source_snapshot=state.get("source_snapshot", "참고 자료 없음"),
                 )
             ),
@@ -22,10 +31,13 @@ async def analyze_requirement(state: WorkflowState, config: RunnableConfig) -> d
 
     requirements_text = response.content
     return {
-        "status": "in_progress",
+        "status": "awaiting_review",
         "step": 1,
-        "awaiting_action": "none",
+        "awaiting_action": "approval",
         "requirements_text": requirements_text,
-        "system_message": "요구 사항 분석 단계가 완료되었습니다. 다음 단계로 진행할지 결정해주세요.",
-        "last_user_request": state["message"],
+        "outline_text": "",
+        "draft_text": "",
+        "final_text": "",
+        "system_message": requirements_text,
+        "last_user_request": base_request,
     }
