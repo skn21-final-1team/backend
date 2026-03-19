@@ -60,3 +60,8 @@ Thumbs.db
 
 # test
 test
+
+# Evaluation results
+mlruns/
+eval
+.deepeval
