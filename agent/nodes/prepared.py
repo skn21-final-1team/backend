@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnableConfig
 from agent.model.llm_factory import llm_factory
 from agent.prompts.report_workflow import PREPARED_SYSTEM_PROMPT, PREPARED_USER_PROMPT
 from agent.workflow_state import WorkflowState
+from agent.workflow_types import WORKFLOW_STEP_BY_NAME
 
 
 def _revision_request_text(state: WorkflowState) -> str:
@@ -30,7 +31,7 @@ async def prepare_draft(state: WorkflowState, config: RunnableConfig) -> dict:
     draft_text = response.content
     return {
         "status": "awaiting_review",
-        "step": 3,
+        "step": WORKFLOW_STEP_BY_NAME["prepared"],
         "awaiting_action": "approval",
         "draft_text": draft_text,
         "final_text": "",

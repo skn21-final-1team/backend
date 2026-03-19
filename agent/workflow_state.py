@@ -1,9 +1,6 @@
-from typing import Literal, TypedDict
+from typing import TypedDict
 
-from schemas.report_workflow import AwaitingAction, WorkflowStatus
-
-WorkflowAction = Literal["", "approve", "reset", "revise"]
-WorkflowStep = Literal[1, 2, 3, 4]
+from agent.workflow_types import AwaitingAction, WorkflowAction, WorkflowStatus, WorkflowStep
 
 
 class WorkflowState(TypedDict):

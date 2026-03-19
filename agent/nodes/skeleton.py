@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnableConfig
 from agent.model.llm_factory import llm_factory
 from agent.prompts.report_workflow import SKELETON_SYSTEM_PROMPT, SKELETON_USER_PROMPT
 from agent.workflow_state import WorkflowState
+from agent.workflow_types import WORKFLOW_STEP_BY_NAME
 
 
 def _revision_request_text(state: WorkflowState) -> str:
@@ -29,7 +30,7 @@ async def build_skeleton(state: WorkflowState, config: RunnableConfig) -> dict:
     outline_text = response.content
     return {
         "status": "awaiting_review",
-        "step": 2,
+        "step": WORKFLOW_STEP_BY_NAME["skeleton"],
         "awaiting_action": "approval",
         "outline_text": outline_text,
         "draft_text": "",

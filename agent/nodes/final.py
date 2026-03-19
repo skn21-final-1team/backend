@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnableConfig
 from agent.model.llm_factory import llm_factory
 from agent.prompts.report_workflow import FINAL_SYSTEM_PROMPT, FINAL_USER_PROMPT
 from agent.workflow_state import WorkflowState
+from agent.workflow_types import WORKFLOW_STEP_BY_NAME
 
 
 def _revision_request_text(state: WorkflowState) -> str:
@@ -31,7 +32,7 @@ async def finalize_report(state: WorkflowState, config: RunnableConfig) -> dict:
     final_text = response.content
     return {
         "status": "awaiting_review",
-        "step": 4,
+        "step": WORKFLOW_STEP_BY_NAME["final"],
         "awaiting_action": "approval",
         "final_text": final_text,
         "system_message": "최종 문서 생성을 완료했습니다. 내용을 검토해 주세요.",

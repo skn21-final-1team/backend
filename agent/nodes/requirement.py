@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnableConfig
 from agent.model.llm_factory import llm_factory
 from agent.prompts.report_workflow import REQUIREMENT_SYSTEM_PROMPT, REQUIREMENT_USER_PROMPT
 from agent.workflow_state import WorkflowState
+from agent.workflow_types import INITIAL_WORKFLOW_STEP
 
 
 def _revision_request_text(state: WorkflowState) -> str:
@@ -29,7 +30,7 @@ async def analyze_requirement(state: WorkflowState, config: RunnableConfig) -> d
     requirements_text = response.content
     return {
         "status": "awaiting_review",
-        "step": 1,
+        "step": INITIAL_WORKFLOW_STEP,
         "awaiting_action": "approval",
         "requirements_text": requirements_text,
         "outline_text": "",

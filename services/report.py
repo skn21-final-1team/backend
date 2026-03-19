@@ -1,11 +1,10 @@
 import json
 from collections.abc import AsyncGenerator
-from typing import Literal, TypedDict
+from typing import Literal
 
 from langgraph.types import Command, Interrupt
 from sqlalchemy.orm import Session
 
-from agent.report_graph import report_graph
 from core.exceptions.notebook import NotebookNotFoundException
 from crud.notebook import get_notebook
 from crud.source import get_sources_by_notebook
@@ -13,46 +12,36 @@ from schemas.report_workflow import (
     ReportWorkflowRequest,
     ReportWorkflowSseMessageType,
     ReportWorkflowSsePayload,
+    ReportWorkflowStep as ApiReportWorkflowStep,
     ReportWorkflowStateResponse,
     ReportWorkflowStepOutputs,
+    WorkflowStatus as ApiWorkflowStatus,
+)
+from services.report_workflow_runtime import (
+    ReviewInterruptPayload,
+    WorkflowStateSnapshot,
+    WorkflowStatus as InternalWorkflowStatus,
+    WorkflowStep as InternalWorkflowStep,
+    WorkflowStepName as InternalWorkflowStepName,
+    report_workflow_runtime,
 )
 
-StepEventName = Literal["requirement", "skeleton", "prepared", "final"]
-WorkflowStep = Literal[1, 2, 3, 4]
-WorkflowStatus = Literal["idle", "in_progress", "awaiting_review", "completed"]
 
-
-class WorkflowStateSnapshot(TypedDict, total=False):
-    status: WorkflowStatus
-    step: WorkflowStep
-    system_message: str
-    requirements_text: str
-    outline_text: str
-    draft_text: str
-    final_text: str
-
-
-class ReviewInterruptPayload(TypedDict):
-    system_message: str
-    content: str
-    step: WorkflowStep
-    step_name: StepEventName
-
-
-_STEP_NUMBER_BY_EVENT_NAME: dict[StepEventName, WorkflowStep] = {
-    "requirement": 1,
-    "skeleton": 2,
-    "prepared": 3,
-    "final": 4,
+_API_WORKFLOW_STATUS_BY_INTERNAL: dict[InternalWorkflowStatus, ApiWorkflowStatus] = {
+    "idle": "idle",
+    "in_progress": "in_progress",
+    "awaiting_review": "awaiting_review",
+    "completed": "completed",
 }
-_STEP_EVENT_NAMES = tuple(_STEP_NUMBER_BY_EVENT_NAME)
 
-_STEP_CONTENT_FIELD_BY_EVENT_NAME = {
-    "requirement": "requirements_text",
-    "skeleton": "outline_text",
-    "prepared": "draft_text",
-    "final": "final_text",
+_API_WORKFLOW_STEP_BY_INTERNAL: dict[InternalWorkflowStep, ApiReportWorkflowStep] = {
+    1: 1,
+    2: 2,
+    3: 3,
+    4: 4,
 }
+
+_STEP_EVENT_NAMES = report_workflow_runtime.step_event_names
 
 
 class ReportService:
@@ -68,7 +57,7 @@ class ReportService:
         event_name: str,
         system_message: str | None,
         content: str | None,
-        step: WorkflowStep | None,
+        step: ApiReportWorkflowStep | None,
         step_name: str | None,
         mode: Literal["start", "resume"] | None,
     ) -> dict[str, object]:
@@ -107,17 +96,17 @@ class ReportService:
 
     def __build_step_payload(
         self,
-        event_name: StepEventName,
+        event_name: InternalWorkflowStepName,
         node_update: WorkflowStateSnapshot,
     ) -> dict[str, object]:
-        step_number = _STEP_NUMBER_BY_EVENT_NAME[event_name]
-        content_field = _STEP_CONTENT_FIELD_BY_EVENT_NAME[event_name]
+        step_number = report_workflow_runtime.step_by_name[event_name]
+        content_field = report_workflow_runtime.output_field_by_step[step_number]
         return self.__build_payload(
             message_type="step",
             event_name=event_name,
             system_message=node_update["system_message"],
             content=node_update[content_field],
-            step=step_number,
+            step=self.__to_api_workflow_step(step_number),
             step_name=event_name,
             mode=None,
         )
@@ -129,7 +118,7 @@ class ReportService:
             event_name="await_user_review",
             system_message=review_payload["system_message"],
             content=review_payload["content"],
-            step=review_payload["step"],
+            step=self.__to_api_workflow_step(review_payload["step"]),
             step_name=review_payload["step_name"],
             mode=None,
         )
@@ -170,12 +159,18 @@ class ReportService:
             final_text=values.get("final_text", ""),
         )
 
+    def __to_api_workflow_status(self, status: InternalWorkflowStatus) -> ApiWorkflowStatus:
+        return _API_WORKFLOW_STATUS_BY_INTERNAL[status]
+
+    def __to_api_workflow_step(self, step: InternalWorkflowStep) -> ApiReportWorkflowStep:
+        return _API_WORKFLOW_STEP_BY_INTERNAL[step]
+
     def __resolve_workflow_status(
         self,
         values: WorkflowStateSnapshot,
         next_nodes: tuple[str, ...],
         interrupts: tuple[Interrupt, ...],
-    ) -> WorkflowStatus:
+    ) -> InternalWorkflowStatus:
         if not values:
             return "idle"
         if interrupts:
@@ -184,7 +179,7 @@ class ReportService:
             return "in_progress"
         return values["status"]
 
-    def __resolve_current_step_number(self, values: WorkflowStateSnapshot) -> WorkflowStep | None:
+    def __resolve_current_step_number(self, values: WorkflowStateSnapshot) -> InternalWorkflowStep | None:
         if not values:
             return None
         return values["step"]
@@ -192,14 +187,16 @@ class ReportService:
     def __resolve_workflow_state(
         self,
         state_snapshot: object,
-    ) -> tuple[WorkflowStatus, WorkflowStep | None, ReportWorkflowStepOutputs]:
+    ) -> tuple[ApiWorkflowStatus, ApiReportWorkflowStep | None, ReportWorkflowStepOutputs]:
         values: WorkflowStateSnapshot = getattr(state_snapshot, "values", {})
         next_nodes: tuple[str, ...] = getattr(state_snapshot, "next", ())
         interrupts: tuple[Interrupt, ...] = getattr(state_snapshot, "interrupts", ())
+        workflow_status = self.__resolve_workflow_status(values, next_nodes, interrupts)
+        current_step = self.__resolve_current_step_number(values)
 
         return (
-            self.__resolve_workflow_status(values, next_nodes, interrupts),
-            self.__resolve_current_step_number(values),
+            self.__to_api_workflow_status(workflow_status),
+            None if current_step is None else self.__to_api_workflow_step(current_step),
             self.__build_step_outputs(values),
         )
 
@@ -209,7 +206,7 @@ class ReportService:
             raise NotebookNotFoundException
 
         workflow_status, current_step, step_outputs = self.__resolve_workflow_state(
-            report_graph.get_state(self.__build_config(notebook_id))
+            report_workflow_runtime.get_state(self.__build_config(notebook_id))
         )
 
         return ReportWorkflowStateResponse(
@@ -224,7 +221,7 @@ class ReportService:
             "message": req.message,
             "source_snapshot": source_snapshot,
             "status": "in_progress",
-            "step": 1,
+            "step": report_workflow_runtime.initial_step,
             "awaiting_action": "none",
             "action": "",
             "last_user_request": req.message,
@@ -264,7 +261,7 @@ class ReportService:
     async def stream_report(self, req: ReportWorkflowRequest, db: Session) -> AsyncGenerator[str, None]:
         source_snapshot = self.__build_source_snapshot(req.notebook_id, db)
         config = self.__build_config(req.notebook_id)
-        state_snapshot = report_graph.get_state(config)
+        state_snapshot = report_workflow_runtime.get_state(config)
         has_pending_work = bool(state_snapshot.next)
         graph_input = self.__build_stream_input(req, source_snapshot, has_pending_work)
         last_interrupt_signature: tuple[str | None, str | None] | None = None
@@ -274,12 +271,7 @@ class ReportService:
             self.__build_thread_payload("resume" if has_pending_work else "start"),
         )
 
-        async for chunk_type, chunk_data in report_graph.astream(
-            graph_input,
-            stream_mode=["updates", "values"],
-            version="v2",
-            config=config,
-        ):
+        async for chunk_type, chunk_data in report_workflow_runtime.stream(graph_input, config):
             if chunk_type == "updates":
                 interrupts = chunk_data.get("__interrupt__", ())
                 if interrupts:
