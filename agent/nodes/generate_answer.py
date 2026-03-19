@@ -20,7 +20,9 @@ async def generate_answer(state: QAState, config: RunnableConfig) -> dict[str, s
     """소스 자료 + 이전 채팅히스토리 기반으로 LLM 답변을 생성합니다."""
     chat_history_text = format_chat_history(state.get("chat_history", []))
 
-    sources_text = "\n\n---\n\n".join(state.get("sources", []))
+    sources_text = "\n\n".join(
+        f"[소스 {i + 1}]\n{source}" for i, source in enumerate(state.get("sources", []))
+    )
 
     messages = [
         SystemMessage(content=QA_SYSTEM_PROMPT),

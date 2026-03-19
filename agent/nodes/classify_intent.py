@@ -8,12 +8,13 @@ from agent.state import QAState
 
 
 class RouteByIntent(BaseModel):
-    """사용자의 의도를 구분합니다."""
+    """사용자의 의도와 복잡도를 구분합니다."""
 
     intent: str = Field(
         description="""
-        - "question": 노트북 소스 자료를 기반으로 답변이 필요한 질문
-        - "casual": 일상적인 인사, 잡담, 단순 대화
+        - "simple": 단일 주제에 대한 직접적인 질문
+        - "complex": 비교, 분석, 다단계 추론이 필요한 복합 질문
+        - "casual": 인사, 잡담, 단순 대화
         """
     )
 
@@ -29,4 +30,4 @@ def classify_intent(state: QAState, config: RunnableConfig) -> dict[str, str]:
         return {"intent": response.intent}
     except Exception as e:
         print("classify_intent error", e)
-    return {"intent": "casual"}
+    return {"intent": "simple"}
