@@ -1,6 +1,10 @@
+import logging
+
 from langgraph.graph import END
 
 from agent.workflow_state import WorkflowState
+
+logger = logging.getLogger(__name__)
 
 
 _STEP_NODE_BY_STEP = {
@@ -10,28 +14,21 @@ _STEP_NODE_BY_STEP = {
     4: "final",
 }
 
-_NEXT_NODE_BY_STEP = {
-    1: "skeleton",
-    2: "prepared",
-    3: "final",
-}
-
 _FINAL_STEP = 4
 
 
 def route_report_workflow(state: WorkflowState) -> str:
-    action = str(state.get("action", "")).strip().lower()
-    step = int(state.get("step") or 1)
+    action = state["action"].strip().lower()
+    step = state["step"]
 
     if action == "reset":
-        return "requirement"
+        target = "requirement"
+    elif action == "revise":
+        target = _STEP_NODE_BY_STEP[step]
+    elif action == "approve":
+        target = END if step >= _FINAL_STEP else _STEP_NODE_BY_STEP[step + 1]
+    else:
+        target = _STEP_NODE_BY_STEP[step]
 
-    if action == "revise":
-        return _STEP_NODE_BY_STEP.get(step, "requirement")
-
-    if action == "approve":
-        if step >= _FINAL_STEP:
-            return END
-        return _NEXT_NODE_BY_STEP.get(step, "requirement")
-
-    return _STEP_NODE_BY_STEP.get(step, "requirement")
+    print(f"route_report_workflow resolved route action={action} step={step} target={target}")
+    return target
