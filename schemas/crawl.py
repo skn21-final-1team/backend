@@ -28,3 +28,19 @@ class CrawlCallbackEvent(BaseModel):
     event: str
     stage: str | None = None
     error: str | None = None
+
+
+class CrawlSyncBody(BaseModel):
+    url: str
+    directory_id: int
+    source_id: int
+
+
+class CrawlSyncRequest(BaseModel):
+    sources: list[CrawlSyncBody]
+    notebook_id: int
+
+
+class CrawlSyncResponse(BaseModel):
+    source_id: list[int]
+    status_list: list[str]

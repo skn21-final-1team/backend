@@ -8,6 +8,9 @@ import crud.source as source_crud
 from core.exceptions.auth import InvalidTokenException
 from schemas.directory import BookmarkFromExtension
 
+from schemas.crawl import CrawlSyncBody, CrawlSyncRequest
+from services.crawl import crawl_service
+
 
 class DirectorySyncService:
     def get_user_id_from_sync_key(self, sync_key: str, db: Session) -> bool:
@@ -29,7 +32,10 @@ class DirectorySyncService:
         bookmarks: list[BookmarkFromExtension],
         notebook_id: int,
         parent_id: int | None = None,
-    ):
+        crawl_list: CrawlSyncRequest | None = None
+    ) -> CrawlSyncRequest:
+        if not crawl_list:
+            crawl_list = CrawlSyncRequest(sources=[], notebook_id=notebook_id)
 
         for bookmark in bookmarks:
             if not bookmark.url:
@@ -40,21 +46,34 @@ class DirectorySyncService:
                     notebook_id=notebook_id,
                 )
                 if bookmark.children:
-                    self.save_directory_tree(db, bookmark.children, notebook_id, directory.id)
+                    self.save_directory_tree(
+                        db, bookmark.children, notebook_id, directory.id, crawl_list
+                        )
             else:
-                source_crud.create_source(
+                source = source_crud.create_source(
                     db=db,
                     url=bookmark.url,
                     title=bookmark.title,
                     directory_id=parent_id,
                     notebook_id=notebook_id,
                 )
+                crawl_list.sources.append(
+                    CrawlSyncBody(
+                        url=source.url,
+                        directory_id=source.directory_id,
+                        source_id=source.id,
+                    )
+                )
         db.commit()
+        return crawl_list
 
     def sync_bookmarks(self, sync_key: str, bookmarks: list[BookmarkFromExtension], db: Session) -> None:
         target = self.get_user_id_from_sync_key(sync_key, db)
         self.save_directory_tree(db, bookmarks, target.notebook_id, None)
         self.delete_sync_key(sync_key, db)
 
+    async def __crawl_calling(self, body: CrawlSyncRequest) -> None:
+        """crawl BE endpoint 비동기 크롤링 파이프라인 요청 전달"""
+        return await crawl_service.request_sync_crawl(body)
 
 directory_sync_service = DirectorySyncService()
