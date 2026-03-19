@@ -7,14 +7,11 @@ from agent.workflow_state import WorkflowState
 
 
 def _revision_request_text(state: WorkflowState) -> str:
-    revision_request = state.get("last_revision_request")
-    if isinstance(revision_request, str) and revision_request.strip():
-        return revision_request
-    return "없음"
+    return state["last_revision_request"].strip() or "없음"
 
 
 async def finalize_report(state: WorkflowState, config: RunnableConfig) -> dict:
-    base_request = state.get("last_user_request") or state["message"]
+    base_request = state["last_user_request"] or state["message"]
     llm = llm_factory.get_llm(config)
     response = await llm.ainvoke(
         [
@@ -23,9 +20,9 @@ async def finalize_report(state: WorkflowState, config: RunnableConfig) -> dict:
                 content=FINAL_USER_PROMPT.format(
                     base_request=base_request,
                     revision_request=_revision_request_text(state),
-                    requirements_text=state.get("requirements_text", "없음"),
-                    outline_text=state.get("outline_text", "없음"),
-                    draft_text=state.get("draft_text", "없음"),
+                    requirements_text=state["requirements_text"],
+                    outline_text=state["outline_text"],
+                    draft_text=state["draft_text"],
                 )
             ),
         ]

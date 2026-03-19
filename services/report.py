@@ -1,23 +1,124 @@
 import json
 from collections.abc import AsyncGenerator
+from typing import Literal
 
+from langgraph.types import Command, Interrupt
 from sqlalchemy.orm import Session
 
 from agent.report_graph import report_graph
 from core.exceptions.notebook import NotebookNotFoundException
 from crud.notebook import get_notebook
 from crud.source import get_sources_by_notebook
-from langgraph.types import Command
-from schemas.report_workflow import ReportWorkflowRequest
+from schemas.report_workflow import (
+    ReportWorkflowRequest,
+    ReportWorkflowSseMessageType,
+    ReportWorkflowSsePayload,
+)
+
+_STEP_NUMBER_BY_EVENT_NAME = {
+    "requirement": 1,
+    "skeleton": 2,
+    "prepared": 3,
+    "final": 4,
+}
+_STEP_EVENT_NAMES = tuple(_STEP_NUMBER_BY_EVENT_NAME)
+
+_STEP_CONTENT_FIELD_BY_EVENT_NAME = {
+    "requirement": "requirements_text",
+    "skeleton": "outline_text",
+    "prepared": "draft_text",
+    "final": "final_text",
+}
+
+_STEP_NAME_BY_STEP_NUMBER = {
+    1: "requirement",
+    2: "skeleton",
+    3: "prepared",
+    4: "final",
+}
 
 
 class ReportService:
-    def __sse_event(self, event_name: str, data: str) -> str:
-        payload = "\n".join(f"data: {line}" for line in data.splitlines()) or "data: "
-        return f"event: {event_name}\n{payload}\n\n"
+    def __sse_event(self, event_name: str, payload: dict[str, object]) -> str:
+        data = json.dumps(payload, ensure_ascii=False)
+        body = "\n".join(f"data: {line}" for line in data.splitlines()) or "data: "
+        return f"event: {event_name}\n{body}\n\n"
 
-    def __json_sse_event(self, event_name: str, payload: dict[str, object]) -> str:
-        return self.__sse_event(event_name, json.dumps(payload, ensure_ascii=False))
+    def __build_payload(
+        self,
+        *,
+        message_type: ReportWorkflowSseMessageType,
+        event_name: str,
+        system_message: str | None,
+        content: str | None,
+        step: int | None,
+        step_name: str | None,
+        mode: Literal["start", "resume"] | None,
+    ) -> dict[str, object]:
+        return ReportWorkflowSsePayload(
+            message_type=message_type,
+            event_name=event_name,
+            system_message=system_message,
+            content=content,
+            step=step,
+            step_name=step_name,
+            mode=mode,
+        ).model_dump(mode="json", exclude_none=False)
+
+    def __build_thread_payload(self, mode: Literal["start", "resume"]) -> dict[str, object]:
+        system_message = "리포트 워크플로우를 재개합니다." if mode == "resume" else "리포트 워크플로우를 시작합니다."
+        return self.__build_payload(
+            message_type="thread",
+            event_name="thread",
+            system_message=system_message,
+            content=None,
+            step=None,
+            step_name=None,
+            mode=mode,
+        )
+
+    def __build_done_payload(self) -> dict[str, object]:
+        return self.__build_payload(
+            message_type="done",
+            event_name="done",
+            system_message="리포트 워크플로우가 완료되었습니다.",
+            content=None,
+            step=None,
+            step_name=None,
+            mode=None,
+        )
+
+    def __build_step_payload(
+        self,
+        event_name: str,
+        node_update: dict[str, object],
+    ) -> dict[str, object]:
+        step_number = _STEP_NUMBER_BY_EVENT_NAME[event_name]
+        content_field = _STEP_CONTENT_FIELD_BY_EVENT_NAME[event_name]
+        return self.__build_payload(
+            message_type="step",
+            event_name=event_name,
+            system_message=node_update["system_message"],
+            content=node_update[content_field],
+            step=step_number,
+            step_name=event_name,
+            mode=None,
+        )
+
+    def __build_review_payload(self, interrupt_value: Interrupt) -> dict[str, object]:
+        review_payload = interrupt_value.value
+        return self.__build_payload(
+            message_type="review",
+            event_name="await_user_review",
+            system_message=review_payload["system_message"],
+            content=review_payload["content"],
+            step=review_payload["step"],
+            step_name=review_payload["step_name"],
+            mode=None,
+        )
+
+    def __extract_interrupt_payloads(self, interrupts: tuple[Interrupt, ...]) -> list[dict[str, object]]:
+        return [self.__build_review_payload(interrupt) for interrupt in interrupts]
 
     def __build_source_snapshot(self, notebook_id: int, db: Session) -> str:
         notebook = get_notebook(db, notebook_id)
@@ -38,27 +139,11 @@ class ReportService:
                         f"- title: {source.title or '제목 없음'}",
                         f"- url: {source.url}",
                         f"- status: {source.status}",
-                        f"- content: {content.strip() if isinstance(content, str) else content}",
+                        f"- content: {content.strip()}",
                     ]
                 )
             )
         return "\n\n---\n\n".join(sections)
-
-    def __extract_markdown(self, node_update: object) -> str | None:
-        if isinstance(node_update, dict):
-            markdown = node_update.get("system_message")
-            if isinstance(markdown, str) and markdown.strip():
-                return markdown.strip()
-        if isinstance(node_update, str) and node_update.strip():
-            return node_update.strip()
-        return None
-
-    def __iter_updates(self, chunk: object) -> list[tuple[str, object]]:
-        if isinstance(chunk, dict):
-            return list(chunk.items())
-        if isinstance(chunk, tuple) and len(chunk) == 2 and isinstance(chunk[1], dict):
-            return list(chunk[1].items())
-        return []
 
     def __build_initial_state(self, req: ReportWorkflowRequest, source_snapshot: str) -> dict[str, object]:
         return {
@@ -68,6 +153,7 @@ class ReportService:
             "status": "in_progress",
             "step": 1,
             "awaiting_action": "none",
+            "action": "",
             "last_user_request": req.message,
             "last_revision_request": "",
             "last_approved_step": None,
@@ -75,12 +161,9 @@ class ReportService:
             "outline_text": "",
             "draft_text": "",
             "final_text": "",
-            "system_message": "",
+            "system_message": "해당 요구사항으로 문서를 작성했어요. 결과물을 검토해 주세요.",
             "clarification_questions": [],
         }
-
-    def __thread_id(self, notebook_id: int) -> str:
-        return f"report:{notebook_id}"
 
     def __build_stream_input(
         self,
@@ -97,82 +180,62 @@ class ReportService:
             )
         return self.__build_initial_state(req, source_snapshot)
 
-    def __build_config(self, thread_id: str) -> dict[str, object]:
+    def __build_config(self, notebook_id: int) -> dict[str, object]:
         return {
             "configurable": {
                 "model_name": "gpt-4o-mini",
-                "thread_id": thread_id,
+                "thread_id": notebook_id,
             }
         }
 
-    def __extract_interrupt_markdown(self, interrupts: object) -> list[str]:
-        if not interrupts:
-            return []
-
-        values = interrupts if isinstance(interrupts, (list, tuple)) else [interrupts]
-        markdowns: list[str] = []
-        for interrupt in values:
-            payload = getattr(interrupt, "value", interrupt)
-            if not isinstance(payload, dict):
-                continue
-            markdown = payload.get("markdown")
-            if isinstance(markdown, str) and markdown.strip():
-                markdowns.append(markdown.strip())
-        return markdowns
-
     async def stream_report(self, req: ReportWorkflowRequest, db: Session) -> AsyncGenerator[str, None]:
         source_snapshot = self.__build_source_snapshot(req.notebook_id, db)
-        thread_id = self.__thread_id(req.notebook_id)
-        config = self.__build_config(thread_id)
-        try:
-            state_snapshot = report_graph.get_state(config)
-        except Exception:
-            state_snapshot = None
-        has_pending_work = bool(getattr(state_snapshot, "next", ()))
+        config = self.__build_config(req.notebook_id)
+        state_snapshot = report_graph.get_state(config)
+        has_pending_work = bool(state_snapshot.next)
         graph_input = self.__build_stream_input(req, source_snapshot, has_pending_work)
-        last_interrupt_markdown: str | None = None
+        last_interrupt_signature: tuple[str | None, str | None] | None = None
 
-        yield self.__json_sse_event(
+        yield self.__sse_event(
             "thread",
-            {
-                "thread_id": thread_id,
-                "mode": "resume" if has_pending_work else "start",
-            },
+            self.__build_thread_payload("resume" if has_pending_work else "start"),
         )
 
-        async for chunk in report_graph.astream(
+        async for chunk_type, chunk_data in report_graph.astream(
             graph_input,
             stream_mode=["updates", "values"],
             version="v2",
             config=config,
         ):
-            chunk_type = chunk.get("type")
-            chunk_data = chunk.get("data")
-
             if chunk_type == "updates":
-                if isinstance(chunk_data, dict):
-                    interrupts = chunk_data.get("__interrupt__")
-                    for markdown in self.__extract_interrupt_markdown(interrupts):
-                        if markdown == last_interrupt_markdown:
+                interrupts = chunk_data.get("__interrupt__", ())
+                if interrupts:
+                    for payload in self.__extract_interrupt_payloads(interrupts):
+                        signature = (payload["system_message"], payload["content"])
+                        if signature == last_interrupt_signature:
                             continue
-                        last_interrupt_markdown = markdown
-                        yield self.__sse_event("await_user_review", markdown)
-                for node_name, node_update in self.__iter_updates(chunk_data):
-                    markdown = self.__extract_markdown(node_update)
-                    if markdown:
-                        last_interrupt_markdown = None
-                        yield self.__sse_event(node_name, markdown)
+                        last_interrupt_signature = signature
+                        yield self.__sse_event("await_user_review", payload)
+                    continue
+
+                for node_name, node_update in chunk_data.items():
+                    if node_name not in _STEP_EVENT_NAMES:
+                        continue
+                    payload = self.__build_step_payload(node_name, node_update)
+                    last_interrupt_signature = None
+                    yield self.__sse_event(node_name, payload)
                 continue
 
-            if chunk_type == "values" and isinstance(chunk_data, dict):
-                interrupts = chunk_data.get("interrupts") or chunk_data.get("__interrupt__")
-                for markdown in self.__extract_interrupt_markdown(interrupts):
-                    if markdown == last_interrupt_markdown:
+            if chunk_type == "values":
+                interrupts = chunk_data.get("__interrupt__", ())
+                for payload in self.__extract_interrupt_payloads(interrupts):
+                    signature = (payload["system_message"], payload["content"])
+                    if signature == last_interrupt_signature:
                         continue
-                    last_interrupt_markdown = markdown
-                    yield self.__sse_event("await_user_review", markdown)
+                    last_interrupt_signature = signature
+                    yield self.__sse_event("await_user_review", payload)
 
-        yield self.__sse_event("done", "[DONE]")
+        yield self.__sse_event("done", self.__build_done_payload())
 
 
 report_service = ReportService()

@@ -1,16 +1,8 @@
 from __future__ import annotations
 
-from typing import TypedDict, cast
-
-from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 
 from agent.workflow_state import WorkflowState
-
-
-class ReviewResumePayload(TypedDict):
-    message: str
-    source_snapshot: str
 
 
 _STEP_NAME_BY_STEP = {
@@ -29,25 +21,24 @@ _CURRENT_OUTPUT_FIELD_BY_STEP = {
 
 
 def _get_current_output(state: WorkflowState) -> str:
-    step = cast(int, state.get("step", 1))
+    step = state["step"]
     field_name = _CURRENT_OUTPUT_FIELD_BY_STEP[step]
-    current_output = cast(str, state.get(field_name, ""))
-    return current_output.strip()
+    return state[field_name].strip() or "없음"
 
 
-async def await_user_review(state: WorkflowState, config: RunnableConfig) -> dict[str, object]:
-    step = cast(int, state.get("step", 1))
+async def await_user_review(state: WorkflowState) -> dict[str, object]:
+    step = state["step"]
     step_name = _STEP_NAME_BY_STEP[step]
     current_output = _get_current_output(state)
 
-    resume_value = cast(ReviewResumePayload, interrupt(
+    resume_value = interrupt(
         {
-            "system_message": "현재 단계 결과를 검토해 주세요.",
+            "system_message": state["system_message"],
             "content": current_output,
             "step": step,
             "step_name": step_name,
         }
-    ))
+    )
 
     return {
         "message": resume_value["message"],

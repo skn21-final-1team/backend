@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import cast
-
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
@@ -33,36 +31,28 @@ class ReviewDecisionPayload(BaseModel):
     next_step: int = Field(description="권장 다음 단계 번호")
 
 
-def _normalize_text(content: object) -> str:
-    if isinstance(content, str):
-        return content.strip()
-    if isinstance(content, list):
-        return "\n".join(str(item) for item in content).strip()
-    return str(content).strip()
-
-
 def _build_current_output(state: WorkflowState) -> str:
-    step = int(state.get("step") or 1)
-    field_name = cast(str, _CURRENT_OUTPUT_FIELD_BY_STEP.get(step, "requirements_text"))
-    current_output = state.get(field_name)
-    if isinstance(current_output, str) and current_output.strip():
-        return current_output.strip()
+    step = state["step"]
+    field_name = _CURRENT_OUTPUT_FIELD_BY_STEP[step]
+    current_output = state[field_name].strip()
+    if current_output:
+        return current_output
     return "없음"
 
 
 def _build_snapshot_text(state: WorkflowState) -> str:
     fields = [
-        ("status", state.get("status")),
-        ("step", state.get("step")),
-        ("awaiting_action", state.get("awaiting_action")),
-        ("last_user_request", state.get("last_user_request")),
-        ("last_revision_request", state.get("last_revision_request")),
-        ("last_approved_step", state.get("last_approved_step")),
-        ("source_snapshot", state.get("source_snapshot")),
-        ("requirements_text", state.get("requirements_text")),
-        ("outline_text", state.get("outline_text")),
-        ("draft_text", state.get("draft_text")),
-        ("final_text", state.get("final_text")),
+        ("status", state["status"]),
+        ("step", state["step"]),
+        ("awaiting_action", state["awaiting_action"]),
+        ("last_user_request", state["last_user_request"]),
+        ("last_revision_request", state["last_revision_request"]),
+        ("last_approved_step", state["last_approved_step"]),
+        ("source_snapshot", state["source_snapshot"]),
+        ("requirements_text", state["requirements_text"]),
+        ("outline_text", state["outline_text"]),
+        ("draft_text", state["draft_text"]),
+        ("final_text", state["final_text"]),
     ]
     lines = ["# Workflow Snapshot"]
     for key, value in fields:
@@ -73,8 +63,8 @@ def _build_snapshot_text(state: WorkflowState) -> str:
 
 
 async def review_decision(state: WorkflowState, config: RunnableConfig) -> dict[str, object]:
-    step = int(state.get("step") or 1)
-    step_name = _STEP_NAME_BY_STEP.get(step, "requirement")
+    step = state["step"]
+    step_name = _STEP_NAME_BY_STEP[step]
     current_output = _build_current_output(state)
     workflow_snapshot = _build_snapshot_text(state)
 
@@ -88,7 +78,7 @@ async def review_decision(state: WorkflowState, config: RunnableConfig) -> dict[
             SystemMessage(content=REVIEW_DECISION_SYSTEM_PROMPT),
             HumanMessage(
                 content=REVIEW_DECISION_USER_PROMPT.format(
-                    message=state.get("message", ""),
+                    message=state["message"],
                     step=step,
                     step_name=step_name,
                     current_output=current_output,
@@ -103,8 +93,13 @@ async def review_decision(state: WorkflowState, config: RunnableConfig) -> dict[
         error_message = f"review_decision returned unsupported action: {payload.action}"
         raise ValueError(error_message)
 
-    reason = _normalize_text(payload.reason)
+    reason = payload.reason
     next_step = int(payload.next_step)
+
+    print(
+        f"review decision resolved: step={step}, step_name={step_name}, "
+        f"action={action}, next_step={next_step}, reason={reason}"
+    )
 
     summary = "\n".join(
         [
@@ -126,8 +121,8 @@ async def review_decision(state: WorkflowState, config: RunnableConfig) -> dict[
         updates["last_approved_step"] = step
     elif action == "reset":
         updates["step"] = 1
-        updates["last_user_request"] = state.get("message", "")
+        updates["last_user_request"] = state["message"]
         updates["last_revision_request"] = ""
     else:
-        updates["last_revision_request"] = state.get("message", "")
+        updates["last_revision_request"] = state["message"]
     return updates

@@ -2,11 +2,11 @@ from typing import Literal, TypedDict
 
 from schemas.report_workflow import AwaitingAction, WorkflowStatus
 
-WorkflowAction = Literal["approve", "reset", "revise"]
+WorkflowAction = Literal["", "approve", "reset", "revise"]
 WorkflowStep = Literal[1, 2, 3, 4]
 
 
-class WorkflowState(TypedDict, total=False):
+class WorkflowState(TypedDict):
     # 그래프 실행에 필요한 입력 상태
     notebook_id: int
     message: str
@@ -29,7 +29,7 @@ class WorkflowState(TypedDict, total=False):
     # 사용자 요청 흐름과 승인 이력을 유지하는 상태
     last_user_request: str
     last_revision_request: str
-    last_approved_step: WorkflowStep
+    last_approved_step: WorkflowStep | None
 
     # 추가 확인이 필요한 질문을 유지하는 상태
     clarification_questions: list[str]
