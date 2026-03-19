@@ -39,9 +39,9 @@ class CrawlService:
                 base_url=settings.chunking_crawl_url,
                 headers={"Content-Type": "application/json"},
             ) as ac:
-                response = await ac.post("/crawl", json=body.model_dump())
+                response = await ac.post("/crawl/sync", json=body.model_dump())
                 response.raise_for_status()
-                return CrawlResponse.model_validate(response.json())
+                return CrawlSyncResponse.model_validate(response.json())
         except ConnectError:
             raise FirecrawlConnectionException from None
         except HTTPStatusError:

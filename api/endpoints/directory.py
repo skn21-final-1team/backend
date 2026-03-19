@@ -34,10 +34,10 @@ def create_extension_sync_key(body: DirectorySyncKeyRequest, db: DbSession, requ
     "/sync",
     response_model=BaseResponse[None],
 )
-def sync_directory_data(body: DirectorySyncRequest, db: DbSession):
+async def sync_directory_data(body: DirectorySyncRequest, db: DbSession):
     """extension 에서 북마크 동기화 호출용"""
-    source_list = directory_sync_service.sync_bookmarks(body.sync_key, body.bookmarks, db)
-    directory_sync_service.__crawl_calling(source_list)
+    crawl_request = directory_sync_service.sync_bookmarks(body.sync_key, body.bookmarks, db)
+    await directory_sync_service._crawl_calling(crawl_request)
     return BaseResponse.ok(data=None)
 
 

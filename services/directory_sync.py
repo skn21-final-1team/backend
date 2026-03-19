@@ -67,12 +67,13 @@ class DirectorySyncService:
         db.commit()
         return crawl_list
 
-    def sync_bookmarks(self, sync_key: str, bookmarks: list[BookmarkFromExtension], db: Session) -> None:
+    def sync_bookmarks(self, sync_key: str, bookmarks: list[BookmarkFromExtension], db: Session) -> CrawlSyncRequest:
         target = self.get_user_id_from_sync_key(sync_key, db)
-        self.save_directory_tree(db, bookmarks, target.notebook_id, None)
+        crawl_request = self.save_directory_tree(db, bookmarks, target.notebook_id, None)
         self.delete_sync_key(sync_key, db)
+        return crawl_request
 
-    async def __crawl_calling(self, body: CrawlSyncRequest) -> None:
+    async def _crawl_calling(self, body: CrawlSyncRequest) -> None:
         """crawl BE endpoint 비동기 크롤링 파이프라인 요청 전달"""
         return await crawl_service.request_sync_crawl(body)
 
