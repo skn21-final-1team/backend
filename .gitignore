@@ -63,5 +63,5 @@ test
 
 # Evaluation results
 mlruns/
-eval
+eval/results
 .deepeval
