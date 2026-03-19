@@ -61,13 +61,13 @@ class DirectoryService:
     def rename_directory(self, db: Session, directory_id: int, title: str) -> DirectoryResponse:
         directory = update_directory(db, directory_id, title)
         if not directory:
-            raise DirectoryNotFoundException()
+            raise DirectoryNotFoundException
         return DirectoryResponse.model_validate(directory)
 
     def delete_directory(self, db: Session, directory_id: int) -> DirectoryResponse:
         directory = delete_directory(db, directory_id)
         if not directory:
-            raise DirectoryNotFoundException()
+            raise DirectoryNotFoundException
         return DirectoryResponse.model_validate(directory)
 
 

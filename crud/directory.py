@@ -19,7 +19,7 @@ def get_directories_by_notebook(db: Session, notebook_id: int) -> Sequence[Direc
 
 
 def update_directory(db: Session, directory_id: int, title: str) -> DirectoryModel | None:
-    stmt = select(DirectoryModel).where(DirectoryModel.id == directory_id)                                      
+    stmt = select(DirectoryModel).where(DirectoryModel.id == directory_id)
     directory = db.scalars(stmt).first()
     if not directory:
         return None
@@ -30,7 +30,7 @@ def update_directory(db: Session, directory_id: int, title: str) -> DirectoryMod
 
 
 def delete_directory(db: Session, directory_id: int) -> DirectoryModel | None:
-    stmt = select(DirectoryModel).where(DirectoryModel.id == directory_id)                                      
+    stmt = select(DirectoryModel).where(DirectoryModel.id == directory_id)
     directory = db.scalars(stmt).first()
     if not directory:
         return None
