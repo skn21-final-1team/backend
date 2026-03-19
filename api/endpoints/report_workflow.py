@@ -4,7 +4,12 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from db.database import DbSession
-from schemas.report_workflow import ReportWorkflowRequest, ReportWorkflowSsePayload
+from schemas.report_workflow import (
+    ReportWorkflowRequest,
+    ReportWorkflowSsePayload,
+    ReportWorkflowStateResponse,
+)
+from schemas.response import BaseResponse
 from services.report import report_service
 
 router = APIRouter()
@@ -56,3 +61,25 @@ _REPORT_WORKFLOW_STEP_STREAM_EXAMPLE = (
 )
 async def run_report_workflow(req: ReportWorkflowRequest, db: DbSession) -> StreamingResponse:
     return StreamingResponse(report_service.stream_report(req, db), media_type="text/event-stream")
+
+
+@router.get(
+    "/{notebook_id}",
+    summary="리포트 워크플로우 현재 상태 조회",
+    description=(
+        "노트북 ID 기준으로 현재 report-workflow 상태를 조회한다. "
+        "프론트엔드는 이 응답의 최소 필드만 사용해 새로고침 이후 현재 단계와 단계별 산출물을 복원할 수 있다."
+    ),
+    response_model=BaseResponse[ReportWorkflowStateResponse],
+    responses={
+        200: {
+            "description": (
+                "현재 워크플로우 스냅샷을 반환한다. "
+                "`data`에는 `workflow_status`, `current_step`, `step_outputs`만 포함된다."
+            )
+        },
+        404: {"description": "존재하지 않는 노트북이거나 상태를 조회할 수 없는 경우"},
+    },
+)
+def get_report_workflow_state(notebook_id: int, db: DbSession) -> BaseResponse[ReportWorkflowStateResponse]:
+    return BaseResponse.ok(report_service.get_report_workflow_state(notebook_id, db))

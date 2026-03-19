@@ -1,6 +1,6 @@
 import json
 from collections.abc import AsyncGenerator
-from typing import Literal
+from typing import Literal, TypedDict
 
 from langgraph.types import Command, Interrupt
 from sqlalchemy.orm import Session
@@ -13,9 +13,33 @@ from schemas.report_workflow import (
     ReportWorkflowRequest,
     ReportWorkflowSseMessageType,
     ReportWorkflowSsePayload,
+    ReportWorkflowStateResponse,
+    ReportWorkflowStepOutputs,
 )
 
-_STEP_NUMBER_BY_EVENT_NAME = {
+StepEventName = Literal["requirement", "skeleton", "prepared", "final"]
+WorkflowStep = Literal[1, 2, 3, 4]
+WorkflowStatus = Literal["idle", "in_progress", "awaiting_review", "completed"]
+
+
+class WorkflowStateSnapshot(TypedDict, total=False):
+    status: WorkflowStatus
+    step: WorkflowStep
+    system_message: str
+    requirements_text: str
+    outline_text: str
+    draft_text: str
+    final_text: str
+
+
+class ReviewInterruptPayload(TypedDict):
+    system_message: str
+    content: str
+    step: WorkflowStep
+    step_name: StepEventName
+
+
+_STEP_NUMBER_BY_EVENT_NAME: dict[StepEventName, WorkflowStep] = {
     "requirement": 1,
     "skeleton": 2,
     "prepared": 3,
@@ -28,13 +52,6 @@ _STEP_CONTENT_FIELD_BY_EVENT_NAME = {
     "skeleton": "outline_text",
     "prepared": "draft_text",
     "final": "final_text",
-}
-
-_STEP_NAME_BY_STEP_NUMBER = {
-    1: "requirement",
-    2: "skeleton",
-    3: "prepared",
-    4: "final",
 }
 
 
@@ -51,7 +68,7 @@ class ReportService:
         event_name: str,
         system_message: str | None,
         content: str | None,
-        step: int | None,
+        step: WorkflowStep | None,
         step_name: str | None,
         mode: Literal["start", "resume"] | None,
     ) -> dict[str, object]:
@@ -90,8 +107,8 @@ class ReportService:
 
     def __build_step_payload(
         self,
-        event_name: str,
-        node_update: dict[str, object],
+        event_name: StepEventName,
+        node_update: WorkflowStateSnapshot,
     ) -> dict[str, object]:
         step_number = _STEP_NUMBER_BY_EVENT_NAME[event_name]
         content_field = _STEP_CONTENT_FIELD_BY_EVENT_NAME[event_name]
@@ -106,7 +123,7 @@ class ReportService:
         )
 
     def __build_review_payload(self, interrupt_value: Interrupt) -> dict[str, object]:
-        review_payload = interrupt_value.value
+        review_payload: ReviewInterruptPayload = interrupt_value.value
         return self.__build_payload(
             message_type="review",
             event_name="await_user_review",
@@ -144,6 +161,62 @@ class ReportService:
                 )
             )
         return "\n\n---\n\n".join(sections)
+
+    def __build_step_outputs(self, values: WorkflowStateSnapshot) -> ReportWorkflowStepOutputs:
+        return ReportWorkflowStepOutputs(
+            requirements_text=values.get("requirements_text", ""),
+            outline_text=values.get("outline_text", ""),
+            draft_text=values.get("draft_text", ""),
+            final_text=values.get("final_text", ""),
+        )
+
+    def __resolve_workflow_status(
+        self,
+        values: WorkflowStateSnapshot,
+        next_nodes: tuple[str, ...],
+        interrupts: tuple[Interrupt, ...],
+    ) -> WorkflowStatus:
+        if not values:
+            return "idle"
+        if interrupts:
+            return "awaiting_review"
+        if next_nodes:
+            return "in_progress"
+        return values["status"]
+
+    def __resolve_current_step_number(self, values: WorkflowStateSnapshot) -> WorkflowStep | None:
+        if not values:
+            return None
+        return values["step"]
+
+    def __resolve_workflow_state(
+        self,
+        state_snapshot: object,
+    ) -> tuple[WorkflowStatus, WorkflowStep | None, ReportWorkflowStepOutputs]:
+        values: WorkflowStateSnapshot = getattr(state_snapshot, "values", {})
+        next_nodes: tuple[str, ...] = getattr(state_snapshot, "next", ())
+        interrupts: tuple[Interrupt, ...] = getattr(state_snapshot, "interrupts", ())
+
+        return (
+            self.__resolve_workflow_status(values, next_nodes, interrupts),
+            self.__resolve_current_step_number(values),
+            self.__build_step_outputs(values),
+        )
+
+    def get_report_workflow_state(self, notebook_id: int, db: Session) -> ReportWorkflowStateResponse:
+        notebook = get_notebook(db, notebook_id)
+        if not notebook:
+            raise NotebookNotFoundException
+
+        workflow_status, current_step, step_outputs = self.__resolve_workflow_state(
+            report_graph.get_state(self.__build_config(notebook_id))
+        )
+
+        return ReportWorkflowStateResponse(
+            workflow_status=workflow_status,
+            current_step=current_step,
+            step_outputs=step_outputs,
+        )
 
     def __build_initial_state(self, req: ReportWorkflowRequest, source_snapshot: str) -> dict[str, object]:
         return {
