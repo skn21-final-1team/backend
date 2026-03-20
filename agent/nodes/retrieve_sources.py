@@ -20,23 +20,19 @@ vector_store = PGVector(
     create_extension=False,
 )
 
-_MIN_CONTENT_COUNT_FOR_RERANK = 5
-
-
-async def retrieve_sources(state: QAState) -> dict[str, list[str]]:
+async def retrieve_sources(state: QAState) -> dict:
     notebook_id = state["notebook_id"]
-    question = state["question"]
+    queries = state.get("search_queries", [state["question"]])
+    retrieval_count = state.get("retrieval_count", 0)
 
     with get_db_context() as db:
         notebook_source_ids = get_source_ids_by_notebook(db, notebook_id)
         if not notebook_source_ids:
-            return {"sources": []}
+            return {"sources": [], "retrieval_count": retrieval_count + 1}
 
         active_source_ids = get_active_source_ids(db, notebook_source_ids)
         if not active_source_ids:
-            return {"sources": []}
-
-    print("Active source IDs:", active_source_ids)
+            return {"sources": [], "retrieval_count": retrieval_count + 1}
 
     retriever = vector_store.as_retriever(
         search_kwargs={
@@ -49,11 +45,16 @@ async def retrieve_sources(state: QAState) -> dict[str, list[str]]:
         }
     )
 
-    docs = await retriever.ainvoke(question)
-    contents = [doc.page_content for doc in docs]
+    all_contents = []
+    for query in queries:
+        docs = await retriever.ainvoke(query)
+        all_contents.extend([doc.page_content for doc in docs])
 
-    if len(contents) < _MIN_CONTENT_COUNT_FOR_RERANK:
-        return {"sources": contents}
+    unique_contents = list(dict.fromkeys(all_contents))
 
-    reranked = await reranker.rerank(question, contents)
-    return {"sources": reranked}
+    if not unique_contents:
+        return {"sources": [], "retrieval_count": retrieval_count + 1}
+
+    reranked = await reranker.rerank(state["question"], unique_contents)
+
+    return {"sources": reranked, "retrieval_count": retrieval_count + 1}

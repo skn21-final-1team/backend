@@ -32,16 +32,12 @@ class LLMModel:
         "api_key": settings.runpod_api_key,
     }
 
+    # structured output(function calling)을 지원하는 모델
+    _STRUCTURED_OUTPUT_MODELS = {"gpt-4o-mini"}
+
     def get_llm(self, config: RunnableConfig) -> BaseChatModel:
-        """RunnableConfig에서 모델 이름을 읽어 대응하는 LLM 인스턴스를 반환합니다.
-
-        Args:
-            config: LangGraph RunnableConfig. configurable.model_name으로 모델 선택.
-
-        Returns:
-            BaseChatModel: 선택된 LLM 인스턴스.
-        """
-        model_name = config.get("configurable", {}).get("model_name", DEFAULT_LLM_MODEL_NAME)
+        """RunnableConfig에서 모델 이름을 읽어 대응하는 LLM 인스턴스를 반환합니다."""
+        model_name: str = config.get("configurable", {}).get("model_name", DEFAULT_LLM_MODEL_NAME)
 
         if model_name == "exaone":
             return ChatOpenAI(**LLMModel.EXAONE_CONFIG)
@@ -51,6 +47,11 @@ class LLMModel:
                 LLMModel.OPENAI_MODEL_CONFIGS[DEFAULT_LLM_MODEL_NAME],
             )
         )
+
+    def supports_structured_output(self, config: RunnableConfig) -> bool:
+        """현재 모델이 with_structured_output(function calling)을 지원하는지 반환합니다."""
+        model_name: str = config.get("configurable", {}).get("model_name", "gpt-4o-mini")
+        return model_name in self._STRUCTURED_OUTPUT_MODELS
 
 
 llm_factory = LLMModel()
