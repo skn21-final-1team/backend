@@ -7,7 +7,6 @@ baseline.json vs new result를 케이스별로 비교 분석하는 스크립트.
 
 import json
 import sys
-from pathlib import Path
 
 
 METRICS = [
@@ -38,6 +37,20 @@ def classify_question(idx: int) -> str:
         return "complex-related"
 
 
+def _get_score(detail: dict, metric: str) -> float | None:
+    """메트릭 점수를 가져옴. None이면 None 반환 (미평가)."""
+    val = detail["metrics"].get(metric)
+    return val  # None이면 None, 숫자면 숫자
+
+
+def _avg(scores: list[float | None]) -> tuple[float, int]:
+    """None을 제외한 평균과 유효 개수 반환."""
+    valid = [s for s in scores if s is not None]
+    if not valid:
+        return 0.0, 0
+    return sum(valid) / len(valid), len(valid)
+
+
 def analyze(baseline_path: str, new_path: str):
     bl_details = load_details(baseline_path)
     nw_details = load_details(new_path)
@@ -45,11 +58,9 @@ def analyze(baseline_path: str, new_path: str):
     n = min(len(bl_details), len(nw_details))
     print(f"비교 대상: {n}건\n")
 
-    # 케이스별 delta 수집
-    deltas = {m: [] for m in METRICS}
-    by_type = {}
-    degraded_cases = []  # Faithfulness가 크게 떨어진 케이스
-    improved_cases = []  # Answer Relevancy가 크게 오른 케이스
+    by_type: dict[str, dict[str, dict[str, list]]] = {}
+    degraded_cases = []
+    improved_cases = []
 
     for i in range(n):
         bl = bl_details[i]
@@ -59,20 +70,17 @@ def analyze(baseline_path: str, new_path: str):
         if qtype not in by_type:
             by_type[qtype] = {m: {"bl": [], "nw": []} for m in METRICS}
 
-        faith_bl = bl["metrics"].get("Faithfulness", 0) or 0
-        faith_nw = nw["metrics"].get("Faithfulness", 0) or 0
-        ar_bl = bl["metrics"].get("Answer Relevancy", 0) or 0
-        ar_nw = nw["metrics"].get("Answer Relevancy", 0) or 0
-
         for m in METRICS:
-            bl_score = bl["metrics"].get(m, 0) or 0
-            nw_score = nw["metrics"].get(m, 0) or 0
-            deltas[m].append(nw_score - bl_score)
-            by_type[qtype][m]["bl"].append(bl_score)
-            by_type[qtype][m]["nw"].append(nw_score)
+            by_type[qtype][m]["bl"].append(_get_score(bl, m))
+            by_type[qtype][m]["nw"].append(_get_score(nw, m))
 
-        # Faithfulness 크게 하락한 케이스 (0.2 이상)
-        if faith_bl - faith_nw >= 0.2:
+        faith_bl = _get_score(bl, "Faithfulness")
+        faith_nw = _get_score(nw, "Faithfulness")
+        ar_bl = _get_score(bl, "Answer Relevancy")
+        ar_nw = _get_score(nw, "Answer Relevancy")
+
+        # Faithfulness 크게 하락한 케이스 (둘 다 유효하고 0.2 이상 차이)
+        if faith_bl is not None and faith_nw is not None and faith_bl - faith_nw >= 0.2:
             degraded_cases.append({
                 "idx": i + 1,
                 "type": qtype,
@@ -86,8 +94,8 @@ def analyze(baseline_path: str, new_path: str):
                 "nw_sources": len(nw.get("retrieval_context", [])),
             })
 
-        # Answer Relevancy 크게 상승한 케이스 (0.2 이상)
-        if ar_nw - ar_bl >= 0.2:
+        # Answer Relevancy 크게 상승한 케이스
+        if ar_bl is not None and ar_nw is not None and ar_nw - ar_bl >= 0.2:
             improved_cases.append({
                 "idx": i + 1,
                 "type": qtype,
@@ -99,16 +107,15 @@ def analyze(baseline_path: str, new_path: str):
 
     # === 1. 전체 요약 ===
     print("=" * 70)
-    print("  전체 메트릭 비교")
+    print("  전체 메트릭 비교 (null 제외 평균)")
     print("=" * 70)
     print(f"  {'메트릭':<25} {'BASELINE':>10} {'NEW':>10} {'Delta':>10}")
     print(f"  {'-' * 57}")
     for m in METRICS:
-        # recalculate properly
-        bl_all = [bl_details[i]["metrics"].get(m, 0) or 0 for i in range(n)]
-        nw_all = [nw_details[i]["metrics"].get(m, 0) or 0 for i in range(n)]
-        bl_avg = sum(bl_all) / len(bl_all)
-        nw_avg = sum(nw_all) / len(nw_all)
+        bl_all = [_get_score(bl_details[i], m) for i in range(n)]
+        nw_all = [_get_score(nw_details[i], m) for i in range(n)]
+        bl_avg, bl_cnt = _avg(bl_all)
+        nw_avg, nw_cnt = _avg(nw_all)
         delta = nw_avg - bl_avg
         sign = "+" if delta >= 0 else ""
         marker = " ***" if abs(delta) >= 0.05 else ""
@@ -116,7 +123,7 @@ def analyze(baseline_path: str, new_path: str):
 
     # === 2. 질문 유형별 비교 ===
     print(f"\n{'=' * 70}")
-    print("  질문 유형별 메트릭 비교")
+    print("  질문 유형별 메트릭 비교 (null 제외)")
     print("=" * 70)
     for qtype in ["single", "complex-unrelated", "complex-related"]:
         if qtype not in by_type:
@@ -127,48 +134,58 @@ def analyze(baseline_path: str, new_path: str):
         print(f"  {'메트릭':<25} {'BASELINE':>10} {'NEW':>10} {'Delta':>10}")
         print(f"  {'-' * 57}")
         for m in METRICS:
-            bl_avg = sum(data[m]["bl"]) / len(data[m]["bl"]) if data[m]["bl"] else 0
-            nw_avg = sum(data[m]["nw"]) / len(data[m]["nw"]) if data[m]["nw"] else 0
+            bl_avg, bl_cnt = _avg(data[m]["bl"])
+            nw_avg, nw_cnt = _avg(data[m]["nw"])
             delta = nw_avg - bl_avg
             sign = "+" if delta >= 0 else ""
             marker = " ***" if abs(delta) >= 0.05 else ""
-            print(f"  {m:<25} {bl_avg:>10.4f} {nw_avg:>10.4f} {sign}{delta:>9.4f}{marker}")
+            cnt_info = f" ({bl_cnt}/{nw_cnt})" if bl_cnt != count or nw_cnt != count else ""
+            print(f"  {m:<25} {bl_avg:>10.4f} {nw_avg:>10.4f} {sign}{delta:>9.4f}{marker}{cnt_info}")
 
     # === 3. Faithfulness 하락 케이스 ===
     print(f"\n{'=' * 70}")
-    print(f"  Faithfulness 크게 하락 케이스 (delta ≤ -0.2): {len(degraded_cases)}건")
+    print(f"  Faithfulness 크게 하락 케이스 (delta <= -0.2): {len(degraded_cases)}건")
     print("=" * 70)
     for c in degraded_cases:
         print(f"  #{c['idx']:02d} [{c['type']}] {c['question']}")
-        print(f"       Faith: {c['faith_bl']:.2f} → {c['faith_nw']:.2f} ({c['delta']:+.2f})")
-        print(f"       답변길이: {c['bl_answer_len']} → {c['nw_answer_len']}, 소스: {c['bl_sources']} → {c['nw_sources']}")
+        print(f"       Faith: {c['faith_bl']:.2f} -> {c['faith_nw']:.2f} ({c['delta']:+.2f})")
+        print(f"       답변길이: {c['bl_answer_len']} -> {c['nw_answer_len']}, 소스: {c['bl_sources']} -> {c['nw_sources']}")
 
     # === 4. Answer Relevancy 상승 케이스 ===
     print(f"\n{'=' * 70}")
-    print(f"  Answer Relevancy 크게 상승 케이스 (delta ≥ +0.2): {len(improved_cases)}건")
+    print(f"  Answer Relevancy 크게 상승 케이스 (delta >= +0.2): {len(improved_cases)}건")
     print("=" * 70)
     for c in improved_cases:
         print(f"  #{c['idx']:02d} [{c['type']}] {c['question']}")
-        print(f"       AR: {c['ar_bl']:.2f} → {c['ar_nw']:.2f} ({c['delta']:+.2f})")
+        print(f"       AR: {c['ar_bl']:.2f} -> {c['ar_nw']:.2f} ({c['delta']:+.2f})")
 
-    # === 5. 케이스별 Faithfulness 전체 리스트 ===
+    # === 5. 케이스별 핵심 지표 ===
     print(f"\n{'=' * 70}")
     print("  케이스별 핵심 지표 (Faithfulness / Answer Relevancy)")
     print("=" * 70)
-    print(f"  {'#':>3} {'유형':<20} {'Faith BL':>9} {'Faith NW':>9} {'ΔFaith':>8} {'AR BL':>7} {'AR NW':>7} {'ΔAR':>7}")
+    print(f"  {'#':>3} {'유형':<20} {'Faith BL':>9} {'Faith NW':>9} {'dFaith':>8} {'AR BL':>7} {'AR NW':>7} {'dAR':>7}")
     print(f"  {'-' * 75}")
     for i in range(n):
         bl = bl_details[i]
         nw = nw_details[i]
         qtype = classify_question(i)
-        fb = bl["metrics"].get("Faithfulness", 0) or 0
-        fn = nw["metrics"].get("Faithfulness", 0) or 0
-        ab = bl["metrics"].get("Answer Relevancy", 0) or 0
-        an = nw["metrics"].get("Answer Relevancy", 0) or 0
-        df = fn - fb
-        da = an - ab
-        flag = " ←" if df <= -0.2 else ""
-        print(f"  {i+1:>3} {qtype:<20} {fb:>9.3f} {fn:>9.3f} {df:>+8.3f} {ab:>7.3f} {an:>7.3f} {da:>+7.3f}{flag}")
+        fb = _get_score(bl, "Faithfulness")
+        fn = _get_score(nw, "Faithfulness")
+        ab = _get_score(bl, "Answer Relevancy")
+        an = _get_score(nw, "Answer Relevancy")
+
+        fb_s = f"{fb:>9.3f}" if fb is not None else "     null"
+        fn_s = f"{fn:>9.3f}" if fn is not None else "     null"
+        ab_s = f"{ab:>7.3f}" if ab is not None else "   null"
+        an_s = f"{an:>7.3f}" if an is not None else "   null"
+
+        df_s = f"{fn - fb:>+8.3f}" if fb is not None and fn is not None else "     n/a"
+        da_s = f"{an - ab:>+7.3f}" if ab is not None and an is not None else "    n/a"
+
+        flag = ""
+        if fb is not None and fn is not None and fb - fn >= 0.2:
+            flag = " <-"
+        print(f"  {i+1:>3} {qtype:<20} {fb_s} {fn_s} {df_s} {ab_s} {an_s} {da_s}{flag}")
 
 
 if __name__ == "__main__":

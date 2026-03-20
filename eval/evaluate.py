@@ -11,7 +11,6 @@ RAG 파이프라인 A/B 평가 스크립트 (deepeval)
     python -m eval.evaluate --experiment my-exp    # MLflow 실험 이름 지정
     python -m eval.evaluate --batch-size 10        # 10건씩 배치 평가 (rate limit 방지)
     python -m eval.evaluate --batch-delay 120       # 배치 간 대기 시간(초)
-    python -m eval.evaluate --baseline --resume    # 중간 저장 파일에서 이어서 평가
 
 비교 대상:
     baseline = classify(2분류) → 직접 retrieve → 기존 프롬프트로 generate
@@ -295,7 +294,7 @@ def evaluate_in_batches(
 
         print(f"\n{'─' * 60}")
         retry_tag = " [재시도]" if is_retry else ""
-        print(f"  평가 배치 {batch_num}/{total_batches} ({len(batch)}건){retry_tag} — [{label}]")
+        print(f"  평가 배치 {batch_num}/{total_batches} ({len(batch)}건){retry_tag} - [{label}]")
         print(f"{'─' * 60}")
 
         results = _run_batch_with_retry(batch, metrics, batch_num, total_batches, batch_delay)
@@ -361,9 +360,9 @@ def evaluate_in_batches(
         evaluated = len(test_cases) - len(skipped_batches) * batch_size
         print(f"\n  ⚠ 건너뛴 배치: {skipped_batches} ({evaluated}/{len(test_cases)}건 평가 완료)")
 
-    # 중간 저장 파일 삭제 (완료되었으므로)
+    # 중간 저장 파일: skipped 배치가 없을 때만 삭제 (resume 재시도 가능하도록)
     partial_path = RESULTS_DIR / f"_partial_{label.lower()}.json"
-    if partial_path.exists():
+    if partial_path.exists() and not skipped_batches:
         partial_path.unlink()
 
     return {"label": label, "averages": averages, "details": all_details}

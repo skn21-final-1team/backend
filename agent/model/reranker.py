@@ -10,6 +10,7 @@ class Reranker:
         "model": "BAAI/bge-reranker-v2-m3",
         "top_k": 3,
         "min_score": 0.05,
+        "min_results": 2,  # min_score 필터 후에도 최소 보장 개수
         "api_key": settings.runpod_api_key,
         "headers": {"Authorization": f"Bearer {settings.runpod_api_key}", "Content-Type": "application/json"},
         "url": f"{settings.reranker_url}/runsync",
@@ -35,19 +36,24 @@ class Reranker:
         try:
             payload = {"query": query, "documents": documents, "top_k": top_k or self.CONFIG["top_k"]}
 
-            async with httpx.AsyncClient(timeout=30) as client:
+            async with httpx.AsyncClient(timeout=60) as client:
                 response = await client.post(
                     self.CONFIG["url"], json={"input": payload}, headers=self.CONFIG["headers"]
                 )
                 response.raise_for_status()
                 data = response.json()
                 output = data.get("output", [])
-                # min_score 미만 필터링
+                # min_score 미만 필터링 (단, 최소 min_results개는 보장)
                 filtered = [v for v in output if v.get("score", 0) >= self.CONFIG["min_score"]]
+                if len(filtered) < self.CONFIG["min_results"] and output:
+                    filtered = output[: self.CONFIG["min_results"]]
                 print(f"Reranker: {len(output)}건 → {len(filtered)}건 (min_score={self.CONFIG['min_score']})")
                 return [v.get("document", "") for v in filtered]
         except httpx.HTTPStatusError as e:
             print(f"Reranker API error: {e.response.status_code} - {e.response.text}")
+            return []
+        except httpx.ReadTimeout:
+            print("Reranker timeout: 응답 대기 시간 초과")
             return []
 
 
