@@ -7,6 +7,7 @@ from db.database import DbSession
 from schemas.report_workflow import (
     ReportWorkflowRequest,
     ReportWorkflowSsePayload,
+    ReportWorkflowStepOutputs,
     ReportWorkflowStateResponse,
 )
 from schemas.response import BaseResponse
@@ -27,6 +28,20 @@ _REPORT_WORKFLOW_STEP_EVENT_EXAMPLE = ReportWorkflowSsePayload(
 _REPORT_WORKFLOW_STEP_STREAM_EXAMPLE = (
     f"event: requirement\ndata: {json.dumps(_REPORT_WORKFLOW_STEP_EVENT_EXAMPLE, ensure_ascii=False)}\n\n"
 )
+
+_REPORT_WORKFLOW_RESET_RESPONSE_EXAMPLE = BaseResponse.ok(
+    data=ReportWorkflowStateResponse(
+        workflow_status="idle",
+        current_step=None,
+        step_outputs=ReportWorkflowStepOutputs(
+            requirements_text="",
+            outline_text="",
+            draft_text="",
+            final_text="",
+        ),
+    ).model_dump(mode="json"),
+    message="리포트 워크플로우 상태를 초기화했습니다.",
+).model_dump(mode="json")
 
 
 @router.post(
@@ -83,3 +98,37 @@ async def run_report_workflow(req: ReportWorkflowRequest, db: DbSession) -> Stre
 )
 def get_report_workflow_state(notebook_id: int, db: DbSession) -> BaseResponse[ReportWorkflowStateResponse]:
     return BaseResponse.ok(report_service.get_report_workflow_state(notebook_id, db))
+
+
+@router.delete(
+    "/{notebook_id}/state",
+    summary="리포트 워크플로우 상태 초기화",
+    description=(
+        "노트북 ID 기준으로 report-workflow의 체크포인트와 모든 상태를 삭제한다. "
+        "초기화가 끝나면 `workflow_status`는 `idle`, `current_step`은 `null`, "
+        "단계별 산출물은 모두 빈 문자열로 복원되며, 응답 구조는 상태조회 GET과 동일한 "
+        "`ReportWorkflowStateResponse`를 사용한다."
+    ),
+    response_model=BaseResponse[ReportWorkflowStateResponse],
+    responses={
+        200: {
+            "description": (
+                "워크플로우 상태를 초기화한 뒤, 상태조회 GET과 동일한 "
+                "`ReportWorkflowStateResponse` 구조를 반환한다. "
+                "`data`는 `workflow_status=idle`, `current_step=null`, "
+                "`step_outputs`의 모든 필드가 빈 문자열인 상태다."
+            ),
+            "content": {
+                "application/json": {
+                    "example": _REPORT_WORKFLOW_RESET_RESPONSE_EXAMPLE,
+                }
+            },
+        },
+        404: {"description": "존재하지 않는 노트북이거나 상태를 초기화할 수 없는 경우"},
+    },
+)
+def reset_report_workflow(notebook_id: int, db: DbSession) -> BaseResponse[ReportWorkflowStateResponse]:
+    return BaseResponse.ok(
+        report_service.reset_report_workflow(notebook_id, db),
+        message="리포트 워크플로우 상태를 초기화했습니다.",
+    )

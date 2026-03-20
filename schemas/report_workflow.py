@@ -89,7 +89,10 @@ class ReportWorkflowStateResponse(BaseModel):
 
     workflow_status: WorkflowStatus = Field(
         ...,
-        description="현재 워크플로우의 진행 상태. `idle`이면 아직 시작되지 않았거나 복원할 진행 정보가 없는 상태를 의미한다.",
+        description=(
+            "현재 워크플로우의 진행 상태. "
+            "`idle`이면 아직 시작되지 않았거나 복원할 진행 정보가 없는 상태를 의미한다."
+        ),
         examples=["idle", "awaiting_review"],
     )
     current_step: ReportWorkflowStep | None = Field(

@@ -40,6 +40,9 @@ class ReportWorkflowRuntime:
     def get_state(self, config: dict[str, object]) -> object:
         return report_graph.get_state(config)
 
+    def reset_thread(self, thread_id: str) -> None:
+        report_graph.checkpointer.delete_thread(thread_id)
+
     def stream(
         self,
         graph_input: dict[str, object] | Command,

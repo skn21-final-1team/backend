@@ -12,20 +12,29 @@ from schemas.report_workflow import (
     ReportWorkflowRequest,
     ReportWorkflowSseMessageType,
     ReportWorkflowSsePayload,
-    ReportWorkflowStep as ApiReportWorkflowStep,
     ReportWorkflowStateResponse,
     ReportWorkflowStepOutputs,
+)
+from schemas.report_workflow import (
+    ReportWorkflowStep as ApiReportWorkflowStep,
+)
+from schemas.report_workflow import (
     WorkflowStatus as ApiWorkflowStatus,
 )
 from services.report_workflow_runtime import (
     ReviewInterruptPayload,
     WorkflowStateSnapshot,
-    WorkflowStatus as InternalWorkflowStatus,
-    WorkflowStep as InternalWorkflowStep,
-    WorkflowStepName as InternalWorkflowStepName,
     report_workflow_runtime,
 )
-
+from services.report_workflow_runtime import (
+    WorkflowStatus as InternalWorkflowStatus,
+)
+from services.report_workflow_runtime import (
+    WorkflowStep as InternalWorkflowStep,
+)
+from services.report_workflow_runtime import (
+    WorkflowStepName as InternalWorkflowStepName,
+)
 
 _API_WORKFLOW_STATUS_BY_INTERNAL: dict[InternalWorkflowStatus, ApiWorkflowStatus] = {
     "idle": "idle",
@@ -214,6 +223,14 @@ class ReportService:
             current_step=current_step,
             step_outputs=step_outputs,
         )
+
+    def reset_report_workflow(self, notebook_id: int, db: Session) -> ReportWorkflowStateResponse:
+        notebook = get_notebook(db, notebook_id)
+        if not notebook:
+            raise NotebookNotFoundException
+
+        report_workflow_runtime.reset_thread(notebook_id)
+        return self.get_report_workflow_state(notebook_id, db)
 
     def __build_initial_state(self, req: ReportWorkflowRequest, source_snapshot: str) -> dict[str, object]:
         return {
