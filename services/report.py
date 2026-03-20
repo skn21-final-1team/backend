@@ -229,7 +229,7 @@ class ReportService:
         if not notebook:
             raise NotebookNotFoundException
 
-        report_workflow_runtime.reset_thread(notebook_id)
+        report_workflow_runtime.reset_thread(str(notebook_id))
         return self.get_report_workflow_state(notebook_id, db)
 
     def __build_initial_state(self, req: ReportWorkflowRequest, source_snapshot: str) -> dict[str, object]:
@@ -271,7 +271,7 @@ class ReportService:
         return {
             "configurable": {
                 "model_name": "gpt-4o-mini",
-                "thread_id": notebook_id,
+                "thread_id": str(notebook_id),
             }
         }
 

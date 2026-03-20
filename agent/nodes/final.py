@@ -24,6 +24,7 @@ async def finalize_report(state: WorkflowState, config: RunnableConfig) -> dict:
                     requirements_text=state["requirements_text"],
                     outline_text=state["outline_text"],
                     draft_text=state["draft_text"],
+                    source_snapshot=state["source_snapshot"],
                 )
             ),
         ]
