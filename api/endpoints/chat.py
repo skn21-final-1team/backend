@@ -10,7 +10,11 @@ from services.chat import chat_service
 router = APIRouter()
 
 
-@router.post("")
+@router.post(
+    "",
+    summary="채팅 스트리밍 실행",
+    description="노트북의 채팅 컨텍스트를 바탕으로 SSE 스트림을 생성하며, 요청의 `model_name`으로 사용할 LLM을 선택합니다.",
+)
 async def run_agent(req: ChatRequest, db: DbSession) -> StreamingResponse:
     """그래프 실행 과정과 모델 출력을 SSE 프레임으로 스트리밍합니다"""
     return StreamingResponse(agent_service.stream_chat(req, db), media_type="text/event-stream")

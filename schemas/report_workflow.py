@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from agent.model.llm_factory import DEFAULT_LLM_MODEL_NAME
+
 WorkflowStatus = Literal["idle", "in_progress", "awaiting_review", "completed"]
 AwaitingAction = Literal["none", "approval"]
 ReportWorkflowSseMessageType = Literal["thread", "step", "review", "done"]
@@ -16,6 +18,14 @@ class ReportWorkflowRequest(BaseModel):
             "새 워크플로우에서는 최초 문서 요청, 진행 중인 워크플로우에서는 현재 단계에 대한 사용자 검토 피드백"
         ),
         examples=["시장 분석 보고서를 작성해줘. 임원 공유용으로 간결하게 정리해줘."],
+    )
+    model_name: str = Field(
+        default=DEFAULT_LLM_MODEL_NAME,
+        description=(
+            "리포트 워크플로우 실행에 사용할 LLM 모델 이름. "
+            "기본값은 `gpt-4o-mini`이며, `gpt-4o`, `gpt-4.1-mini`, `gpt-4.1` 중 하나로 변경할 수 있다."
+        ),
+        examples=["gpt-4o-mini", "gpt-4.1"],
     )
 
 
@@ -90,8 +100,7 @@ class ReportWorkflowStateResponse(BaseModel):
     workflow_status: WorkflowStatus = Field(
         ...,
         description=(
-            "현재 워크플로우의 진행 상태. "
-            "`idle`이면 아직 시작되지 않았거나 복원할 진행 정보가 없는 상태를 의미한다."
+            "현재 워크플로우의 진행 상태. `idle`이면 아직 시작되지 않았거나 복원할 진행 정보가 없는 상태를 의미한다."
         ),
         examples=["idle", "awaiting_review"],
     )

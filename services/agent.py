@@ -24,6 +24,13 @@ class AgentService:
         _, metadata = chunk
         return metadata.get("langgraph_node") in return_nodes
 
+    def __build_config(self, model_name: str) -> dict[str, object]:
+        return {
+            "configurable": {
+                "model_name": model_name,
+            }
+        }
+
     async def stream_chat(self, req: ChatRequest, db: Session) -> AsyncGenerator[str, None]:
         """SSE 프레임반환, 마지막은 DONE 이벤트 반환"""
         chat_history = self.__chat_history(req.notebook_id, db)
@@ -36,11 +43,7 @@ class AgentService:
             },
             stream_mode=["updates", "messages"],
             version="v2",
-            config={
-                "configurable": {
-                    "model_name": "gpt-4o-mini",
-                }
-            },
+            config=self.__build_config(req.model_name),
         ):
             if not self.__is_return_sse(mode, chunk):
                 continue

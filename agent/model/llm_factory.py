@@ -6,14 +6,23 @@ from core.config import get_settings
 
 settings = get_settings()
 
+DEFAULT_LLM_MODEL_NAME = "gpt-4o-mini"
+
 
 class LLMModel:
     """모델 이름에 따라 적절한 LLM 인스턴스를 생성하는 팩토리 클래스."""
 
-    GPT_4O_MINI_CONFIG = {
-        "model": "gpt-4o-mini",
-        "temperature": 0,
-        "api_key": settings.openai_api_key,
+    OPENAI_MODEL_CONFIGS: dict[str, dict[str, object]] = {
+        "gpt-4o-mini": {
+            "model": "gpt-4o-mini",
+            "temperature": 0,
+            "api_key": settings.openai_api_key,
+        },
+        "gpt-5.4-mini": {
+            "model": "gpt-5.4-mini",
+            "temperature": 0,
+            "api_key": settings.openai_api_key,
+        },
     }
 
     EXAONE_CONFIG = {
@@ -32,11 +41,16 @@ class LLMModel:
         Returns:
             BaseChatModel: 선택된 LLM 인스턴스.
         """
-        model_name: str = config.get("configurable", {}).get("model_name", "gpt-4o-mini")
+        model_name = config.get("configurable", {}).get("model_name", DEFAULT_LLM_MODEL_NAME)
 
         if model_name == "exaone":
             return ChatOpenAI(**LLMModel.EXAONE_CONFIG)
-        return ChatOpenAI(**LLMModel.GPT_4O_MINI_CONFIG)
+        return ChatOpenAI(
+            **LLMModel.OPENAI_MODEL_CONFIGS.get(
+                model_name,
+                LLMModel.OPENAI_MODEL_CONFIGS[DEFAULT_LLM_MODEL_NAME],
+            )
+        )
 
 
 llm_factory = LLMModel()

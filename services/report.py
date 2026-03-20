@@ -5,6 +5,7 @@ from typing import Literal
 from langgraph.types import Command, Interrupt
 from sqlalchemy.orm import Session
 
+from core.llm import DEFAULT_LLM_MODEL_NAME, OpenAILLMModelName
 from core.exceptions.notebook import NotebookNotFoundException
 from crud.notebook import get_notebook
 from crud.source import get_sources_by_notebook
@@ -267,17 +268,21 @@ class ReportService:
             )
         return self.__build_initial_state(req, source_snapshot)
 
-    def __build_config(self, notebook_id: int) -> dict[str, object]:
+    def __build_config(
+        self,
+        notebook_id: int,
+        model_name: OpenAILLMModelName = DEFAULT_LLM_MODEL_NAME,
+    ) -> dict[str, object]:
         return {
             "configurable": {
-                "model_name": "gpt-4o-mini",
+                "model_name": model_name,
                 "thread_id": str(notebook_id),
             }
         }
 
     async def stream_report(self, req: ReportWorkflowRequest, db: Session) -> AsyncGenerator[str, None]:
         source_snapshot = self.__build_source_snapshot(req.notebook_id, db)
-        config = self.__build_config(req.notebook_id)
+        config = self.__build_config(req.notebook_id, req.model_name)
         state_snapshot = report_workflow_runtime.get_state(config)
         has_pending_work = bool(state_snapshot.next)
         graph_input = self.__build_stream_input(req, source_snapshot, has_pending_work)
