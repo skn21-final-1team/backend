@@ -60,6 +60,7 @@ Thumbs.db
 
 # test
 test
+testset*.json
 .claude
 .deepeval/
 eval/
