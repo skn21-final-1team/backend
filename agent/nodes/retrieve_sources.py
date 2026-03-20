@@ -56,5 +56,7 @@ async def retrieve_sources(state: QAState) -> dict:
     if not unique_contents:
         return {"sources": [], "retrieval_count": retrieval_count + 1}
 
-    reranked = await reranker.rerank(state["question"], unique_contents)
+    # 복합 질문(sub-query 2개 이상)은 top_k를 늘려서 각 쿼리 결과가 잘리지 않도록 함
+    top_k = reranker.CONFIG["top_k"] * len(queries) if len(queries) > 1 else None
+    reranked = await reranker.rerank(state["question"], unique_contents, top_k=top_k)
     return {"sources": reranked, "retrieval_count": retrieval_count + 1}

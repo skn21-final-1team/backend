@@ -60,13 +60,30 @@ class BaselineIntent(BaseModel):
     intent: str = Field(description='"question" 또는 "casual"')
 
 
+def _parse_baseline_intent(text: str) -> str:
+    """텍스트 응답에서 intent를 추출합니다."""
+    text_lower = text.strip().lower().strip('"\'')
+    if text_lower in ("question", "casual"):
+        return "simple" if text_lower == "question" else "casual"
+    if "question" in text_lower:
+        return "simple"
+    if "casual" in text_lower:
+        return "casual"
+    return "simple"
+
+
 def baseline_classify_intent(state: QAState, config: RunnableConfig) -> dict:
     try:
         messages = [SystemMessage(content=BASELINE_CLASSIFY_PROMPT.format(question=state["question"]))]
         llm = llm_factory.get_llm(config)
-        response = llm.with_structured_output(BaselineIntent).invoke(messages)
-        intent = "simple" if response.intent == "question" else "casual"
-        return {"intent": intent}
+
+        if llm_factory.supports_structured_output(config):
+            response = llm.with_structured_output(BaselineIntent).invoke(messages)
+            intent = "simple" if response.intent == "question" else "casual"
+            return {"intent": intent}
+        else:
+            response = llm.invoke(messages)
+            return {"intent": _parse_baseline_intent(response.content)}
     except Exception:
         return {"intent": "simple"}
 
