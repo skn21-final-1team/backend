@@ -21,9 +21,6 @@ vector_store = PGVector(
 )
 
 
-MAX_SOURCES = 5
-
-
 async def retrieve_sources(state: QAState) -> dict:
     notebook_id = state["notebook_id"]
     queries = state.get("search_queries", [state["question"]])
@@ -59,16 +56,6 @@ async def retrieve_sources(state: QAState) -> dict:
     if not unique_contents:
         return {"sources": [], "retrieval_count": retrieval_count + 1}
 
-    if len(queries) > 1:
-        # 복합 질문: sub-query별로 개별 rerank 후 합침
-        # 원본 질문으로 rerank하면 각 주제 문서가 min_score 미만으로 탈락할 수 있음
-        all_reranked = []
-        for query in queries:
-            reranked = await reranker.rerank(query, unique_contents)
-            all_reranked.extend(reranked)
-        # 중복 제거 (순서 유지)
-        reranked = list(dict.fromkeys(all_reranked))
-    else:
-        reranked = await reranker.rerank(state["question"], unique_contents)
+    reranked = await reranker.rerank(state["question"], unique_contents)
 
-    return {"sources": reranked[:MAX_SOURCES], "retrieval_count": retrieval_count + 1}
+    return {"sources": reranked, "retrieval_count": retrieval_count + 1}

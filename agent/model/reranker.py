@@ -10,7 +10,6 @@ class Reranker:
         "model": "BAAI/bge-reranker-v2-m3",
         "top_k": 3,
         "min_score": 0.05,
-        "min_results": 2,  # min_score 필터 후에도 최소 보장 개수
         "api_key": settings.runpod_api_key,
         "headers": {"Authorization": f"Bearer {settings.runpod_api_key}", "Content-Type": "application/json"},
         "url": f"{settings.reranker_url}/runsync",
@@ -43,10 +42,8 @@ class Reranker:
                 response.raise_for_status()
                 data = response.json()
                 output = data.get("output", [])
-                # min_score 미만 필터링 (단, 최소 min_results개는 보장)
+                # min_score 미만 필터링
                 filtered = [v for v in output if v.get("score", 0) >= self.CONFIG["min_score"]]
-                if len(filtered) < self.CONFIG["min_results"] and output:
-                    filtered = output[: self.CONFIG["min_results"]]
                 print(f"Reranker: {len(output)}건 → {len(filtered)}건 (min_score={self.CONFIG['min_score']})")
                 return [v.get("document", "") for v in filtered]
         except httpx.HTTPStatusError as e:
