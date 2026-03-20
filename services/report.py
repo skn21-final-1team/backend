@@ -5,7 +5,7 @@ from typing import Literal
 from langgraph.types import Command, Interrupt
 from sqlalchemy.orm import Session
 
-from core.llm import DEFAULT_LLM_MODEL_NAME, OpenAILLMModelName
+from agent.model.llm_factory import DEFAULT_LLM_MODEL_NAME
 from core.exceptions.notebook import NotebookNotFoundException
 from crud.notebook import get_notebook
 from crud.source import get_sources_by_notebook
@@ -271,8 +271,9 @@ class ReportService:
     def __build_config(
         self,
         notebook_id: int,
-        model_name: OpenAILLMModelName = DEFAULT_LLM_MODEL_NAME,
+        model_name: str = DEFAULT_LLM_MODEL_NAME,
     ) -> dict[str, object]:
+        print("model_name in config:", model_name)  # 디버깅용 출력
         return {
             "configurable": {
                 "model_name": model_name,
