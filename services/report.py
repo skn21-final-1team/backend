@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from agent.model.llm_factory import DEFAULT_LLM_MODEL_NAME
 from core.exceptions.notebook import NotebookNotFoundException
 from crud.notebook import get_notebook
-from crud.source import get_sources_by_notebook
 from schemas.report_workflow import (
     ReportWorkflowRequest,
     ReportWorkflowSseMessageType,
@@ -136,31 +135,6 @@ class ReportService:
     def __extract_interrupt_payloads(self, interrupts: tuple[Interrupt, ...]) -> list[dict[str, object]]:
         return [self.__build_review_payload(interrupt) for interrupt in interrupts]
 
-    def __build_source_snapshot(self, notebook_id: int, db: Session) -> str:
-        notebook = get_notebook(db, notebook_id)
-        if not notebook:
-            raise NotebookNotFoundException
-
-        sources = get_sources_by_notebook(db, notebook_id)
-        if not sources:
-            return f"# Source Snapshot\n\n노트북 `{notebook.title}`에 연결된 source가 없습니다."
-
-        sections: list[str] = [f"# Source Snapshot\n\n노트북 `{notebook.title}` 기준 source 정리"]
-        for index, source in enumerate(sources, start=1):
-            content = source.summary or source.refined or source.raw or "내용 없음"
-            sections.append(
-                "\n".join(
-                    [
-                        f"## Source {index}",
-                        f"- title: {source.title or '제목 없음'}",
-                        f"- url: {source.url}",
-                        f"- status: {source.status}",
-                        f"- content: {content.strip()}",
-                    ]
-                )
-            )
-        return "\n\n---\n\n".join(sections)
-
     def __build_step_outputs(self, values: WorkflowStateSnapshot) -> ReportWorkflowStepOutputs:
         return ReportWorkflowStepOutputs(
             requirements_text=values.get("requirements_text", ""),
@@ -233,11 +207,11 @@ class ReportService:
         report_workflow_runtime.reset_thread(str(notebook_id))
         return self.get_report_workflow_state(notebook_id, db)
 
-    def __build_initial_state(self, req: ReportWorkflowRequest, source_snapshot: str) -> dict[str, object]:
+    def __build_initial_state(self, req: ReportWorkflowRequest) -> dict[str, object]:
         return {
             "notebook_id": req.notebook_id,
             "message": req.message,
-            "source_snapshot": source_snapshot,
+            "source_snapshot": "",
             "status": "in_progress",
             "step": report_workflow_runtime.initial_step,
             "awaiting_action": "none",
@@ -266,7 +240,7 @@ class ReportService:
                     "source_snapshot": source_snapshot,
                 }
             )
-        return self.__build_initial_state(req, source_snapshot)
+        return self.__build_initial_state(req)
 
     def __build_config(
         self,
@@ -282,9 +256,14 @@ class ReportService:
         }
 
     async def stream_report(self, req: ReportWorkflowRequest, db: Session) -> AsyncGenerator[str, None]:
-        source_snapshot = self.__build_source_snapshot(req.notebook_id, db)
+        notebook = get_notebook(db, req.notebook_id)
+        if not notebook:
+            raise NotebookNotFoundException
+
         config = self.__build_config(req.notebook_id, req.model_name)
         state_snapshot = report_workflow_runtime.get_state(config)
+        state_values: WorkflowStateSnapshot = getattr(state_snapshot, "values", {})
+        source_snapshot = state_values.get("source_snapshot", "")
         has_pending_work = bool(state_snapshot.next)
         graph_input = self.__build_stream_input(req, source_snapshot, has_pending_work)
         last_interrupt_signature: tuple[str | None, str | None] | None = None
