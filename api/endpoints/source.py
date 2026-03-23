@@ -5,7 +5,7 @@ from core.auth_guard import public
 from db.database import DbSession
 from schemas.crawl import CrawlCallbackEvent
 from schemas.response import BaseResponse
-from schemas.source import SourceResponse, SourceUpdateRequest, SourceAddRequest, SourceUpdateBatchRequest
+from schemas.source import SourceResponse, SourceUpdateRequest, SourceAddRequest
 from services.event_broker import event_broker
 from services.source import source_service
 
@@ -55,15 +55,3 @@ async def crawl_callback(body: CrawlCallbackEvent) -> dict:
 async def source_stream() -> StreamingResponse:
     """SSE 스트림. 프론트엔드가 crawl 이벤트를 실시간으로 수신합니다."""
     return StreamingResponse(event_broker.subscribe(), media_type="text/event-stream")
-
-
-@router.patch(
-    "/{notebook_id}/active",
-    response_model=BaseResponse[list[SourceResponse]],
-    responses={404: {"model": BaseResponse}},
-)
-def active_all_sources(
-    notebook_id: int, body: SourceUpdateBatchRequest, db: DbSession
-) -> BaseResponse[list[SourceResponse]]:
-    """주어진 notebook ID에 속한 모든 소스의 활성화 상태를 일괄 변경합니다."""
-    return BaseResponse.ok(source_service.active_all_sources(notebook_id, body, db))
