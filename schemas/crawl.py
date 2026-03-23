@@ -32,7 +32,7 @@ class CrawlCallbackEvent(BaseModel):
 
 class CrawlSyncBody(BaseModel):
     url: str
-    directory_id: int
+    directory_id: int | None
     source_id: int
 
 
