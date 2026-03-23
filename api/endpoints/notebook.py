@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, Request
 from core.auth_guard import get_current_user
 from db.database import DbSession
 from schemas.notebook import NotebookRequest, NotebookResponse, NotebookSortType, NotebookUpdateBody
+from schemas.source import SourceResponse, SourceUpdateBatchRequest
 from schemas.response import BaseResponse
 from services.notebook import notebook_service
 
@@ -66,3 +67,15 @@ def update_notebook(notebook_id: int, body: NotebookUpdateBody, db: DbSession) -
 )
 def delete_notebook(notebook_id: int, db: DbSession) -> BaseResponse[NotebookResponse]:
     return BaseResponse.ok(notebook_service.delete_notebook(notebook_id, db))
+
+
+@router.patch(
+    "/{notebook_id}/sources/active",
+    response_model=BaseResponse[list[SourceResponse]],
+    responses={404: {"model": BaseResponse}},
+)
+def active_all_sources(
+    notebook_id: int, body: SourceUpdateBatchRequest, db: DbSession
+) -> BaseResponse[list[SourceResponse]]:
+    """주어진 notebook ID에 속한 모든 소스의 활성화 상태를 일괄 변경합니다."""
+    return BaseResponse.ok(notebook_service.active_all_sources(notebook_id, body, db))
