@@ -7,6 +7,7 @@ from agent.state import QAState
 from core.config import get_settings
 from crud.source import get_active_source_ids, get_source_ids_by_notebook
 from db.database import get_db_context
+from models.source import SourceModel
 
 settings = get_settings()
 
@@ -46,15 +47,39 @@ async def retrieve_sources(state: QAState) -> dict:
     )
 
     all_contents = []
+    content_to_source_id: dict[str, int] = {}
     for query in queries:
         docs = await retriever.ainvoke(query)
-        all_contents.extend([doc.page_content for doc in docs])
+        for doc in docs:
+            all_contents.append(doc.page_content)
+            if doc.page_content not in content_to_source_id:
+                content_to_source_id[doc.page_content] = doc.metadata.get("source_id")
 
     unique_contents = list(dict.fromkeys(all_contents))
 
     if not unique_contents:
-        return {"sources": [], "retrieval_count": retrieval_count + 1}
+        return {"sources": [], "source_metadata": [], "retrieval_count": retrieval_count + 1}
 
     reranked = await reranker.rerank(state["question"], unique_contents)
 
-    return {"sources": reranked, "retrieval_count": retrieval_count + 1}
+    # rerank된 청크의 source_id로 URL/title 조회
+    reranked_source_ids = {content_to_source_id[c] for c in reranked if c in content_to_source_id}
+    source_info: dict[int, dict] = {}
+    if reranked_source_ids:
+        with get_db_context() as db:
+            rows = db.query(SourceModel.id, SourceModel.url, SourceModel.title).filter(
+                SourceModel.id.in_(reranked_source_ids)
+            ).all()
+            source_info = {r.id: {"url": r.url, "title": r.title} for r in rows}
+
+    source_metadata = []
+    for content in reranked:
+        sid = content_to_source_id.get(content)
+        info = source_info.get(sid, {})
+        source_metadata.append({
+            "content": content,
+            "url": info.get("url", ""),
+            "title": info.get("title", ""),
+        })
+
+    return {"sources": reranked, "source_metadata": source_metadata, "retrieval_count": retrieval_count + 1}

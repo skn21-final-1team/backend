@@ -35,7 +35,7 @@ class AgentService:
     async def stream_chat(self, req: ChatRequest, db: Session) -> AsyncGenerator[str, None]:
         """SSE 프레임반환, 마지막은 DONE 이벤트 반환"""
         chat_history = self.__chat_history(req.notebook_id, db)
-        sources = []
+        source_metadata = []
 
         async for mode, chunk in graph.astream(
             {
@@ -48,7 +48,7 @@ class AgentService:
             config=self.__build_config(req.model_name),
         ):
             if mode == "updates" and "retrieve_sources" in chunk:
-                sources = chunk["retrieve_sources"].get("sources", [])
+                source_metadata = chunk["retrieve_sources"].get("source_metadata", [])
                 continue
 
             if not self.__is_return_sse(mode, chunk):
@@ -57,9 +57,10 @@ class AgentService:
             message_chunk, _ = chunk
             yield self.__sse_event(mode, message_chunk.content)
 
-        if sources:
-            source_map = [{"index": i + 1, "content": s} for i, s in enumerate(sources)]
-            yield self.__sse_event("sources", json.dumps(source_map, ensure_ascii=False))
+        if source_metadata:
+            for i, meta in enumerate(source_metadata):
+                meta["index"] = i + 1
+            yield self.__sse_event("sources", json.dumps(source_metadata, ensure_ascii=False))
         yield self.__sse_event("done", "[DONE]")
 
 

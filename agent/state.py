@@ -6,6 +6,7 @@ class QAState(TypedDict):
     question: str
     search_queries: list[str]
     sources: list[str]
+    source_metadata: list[dict]
     answer: str
     chat_history: list[dict]
     intent: str
