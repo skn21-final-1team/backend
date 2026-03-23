@@ -7,7 +7,7 @@ LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 
 class KSTFormatter(logging.Formatter):
-    def formatTime(self, record, datefmt=None):
+    def formattime(self, record, datefmt=None):
         dt = datetime.fromtimestamp(record.created, tz=KST)
         if datefmt:
             return dt.strftime(datefmt)
