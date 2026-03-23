@@ -70,3 +70,15 @@ def update_source(
     db.commit()
     db.refresh(source)
     return source
+
+
+def update_sources_active_by_notebook(
+    db: Session, notebook_id: int, is_active: bool
+) -> Sequence[SourceModel]:
+    """notebook에 속한 모든 소스의 is_active를 일괄 변경합니다."""
+    stmt = select(SourceModel).where(SourceModel.notebook_id == notebook_id)
+    sources = db.scalars(stmt).all()
+    for source in sources:
+        source.is_active = is_active
+    db.commit()
+    return sources
