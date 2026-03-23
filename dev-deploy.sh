@@ -29,6 +29,6 @@ echo "의존성 설치 중..."
 source .venv/bin/activate
 uv pip install -r pyproject.toml
 
-tmux new-session -d -s myserver "source .venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4"
+tmux new-session -d -s myserver "source .venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 > fastapi.log 2>&1 &"
 
 echo "배포 완료!"
