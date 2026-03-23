@@ -10,10 +10,11 @@ from crud.source import (
     delete_source_by_source_id,
     get_sources_by_notebook,
     update_source,
+    update_sources_active_by_notebook,
     create_source
 )
 from models.source import SourceModel
-from schemas.source import SourceUpdateRequest, SourceAddRequest
+from schemas.source import SourceUpdateRequest, SourceAddRequest, SourceUpdateBatchRequest
 from schemas.crawl import CrawlSourceItem, CrawlNewRequest
 from services.crawl import crawl_service
 
@@ -59,6 +60,13 @@ class SourceService:
             raise CrawlFailedException
 
         return source
-
+    
+    def active_all_sources(
+        self,
+        notebook_id: int,
+        body: SourceUpdateBatchRequest,
+        db: Session,
+    ) -> Sequence[SourceModel]:
+        return update_sources_active_by_notebook(db, notebook_id, body.is_active)
 
 source_service = SourceService()
