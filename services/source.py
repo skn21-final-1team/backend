@@ -60,7 +60,7 @@ class SourceService:
             raise CrawlFailedException
 
         return source
-    
+
     def active_all_sources(
         self,
         notebook_id: int,
