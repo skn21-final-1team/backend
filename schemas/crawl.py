@@ -30,17 +30,12 @@ class CrawlCallbackEvent(BaseModel):
     error: str | None = None
 
 
-class CrawlSyncBody(BaseModel):
-    url: str
-    directory_id: int | None
-    source_id: int
-
-
 class CrawlSyncRequest(BaseModel):
-    sources: list[CrawlSyncBody]
+    source_ids: list[int]
     notebook_id: int
 
 
 class CrawlSyncResponse(BaseModel):
-    source_id: list[int]
-    status_list: list[str]
+    status: str
+    accepted: list[int]
+    not_found: list[int]

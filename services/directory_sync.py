@@ -9,7 +9,7 @@ from core.exceptions.auth import InvalidTokenException
 from models.extension import ExtensionSyncKeyModel
 from schemas.directory import BookmarkFromExtension
 
-from schemas.crawl import CrawlSyncBody, CrawlSyncRequest
+from schemas.crawl import CrawlSyncRequest
 from services.crawl import crawl_service
 
 
@@ -40,7 +40,7 @@ class DirectorySyncService:
         crawl_list: CrawlSyncRequest | None = None
     ) -> CrawlSyncRequest:
         if not crawl_list:
-            crawl_list = CrawlSyncRequest(sources=[], notebook_id=notebook_id)
+            crawl_list = CrawlSyncRequest(source_ids=[], notebook_id=notebook_id)
 
         for bookmark in bookmarks:
             if not bookmark.url:
@@ -62,13 +62,7 @@ class DirectorySyncService:
                     directory_id=parent_id,
                     notebook_id=notebook_id,
                 )
-                crawl_list.sources.append(
-                    CrawlSyncBody(
-                        url=source.url,
-                        directory_id=source.directory_id,
-                        source_id=source.id,
-                    )
-                )
+                crawl_list.source_ids.append(source.id)
         return crawl_list
 
     def sync_bookmarks(self, sync_key: str, bookmarks: list[BookmarkFromExtension], db: Session) -> CrawlSyncRequest:
