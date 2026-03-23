@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from sqlalchemy.orm import Session
 
 from core.exceptions.notebook import NotebookNotFoundException
@@ -9,7 +11,10 @@ from crud.notebook import (
     update_notebook,
 )
 from models.notebook import NotebookModel
+from models.source import SourceModel
 from schemas.notebook import NotebookSortType, NotebookUpdateBody
+from schemas.source import SourceUpdateBatchRequest
+from services.source import source_service
 
 
 class NotebookService:
@@ -41,6 +46,14 @@ class NotebookService:
         if not notebook:
             raise NotebookNotFoundException
         return notebook
+
+    def active_all_sources(
+        self, notebook_id: int, body: SourceUpdateBatchRequest, db: Session
+    ) -> Sequence[SourceModel]:
+        notebook = get_notebook(db, notebook_id)
+        if not notebook:
+            raise NotebookNotFoundException
+        return source_service.active_all_sources(notebook_id, body, db)
 
 
 notebook_service = NotebookService()
