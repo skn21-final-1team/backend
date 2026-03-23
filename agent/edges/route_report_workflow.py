@@ -3,7 +3,7 @@ import logging
 from langgraph.graph import END
 
 from agent.workflow_state import WorkflowState
-from agent.workflow_types import FINAL_WORKFLOW_STEP, INITIAL_WORKFLOW_STEP, WORKFLOW_NAME_BY_STEP
+from agent.workflow_types import FINAL_WORKFLOW_STEP, WORKFLOW_NAME_BY_STEP
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ def route_report_workflow(state: WorkflowState) -> str:
     step = state["step"]
 
     if action == "reset":
-        target = WORKFLOW_NAME_BY_STEP[INITIAL_WORKFLOW_STEP]
+        target = "filter_source"
     elif action == "revise":
         target = WORKFLOW_NAME_BY_STEP[step]
     elif action == "approve":

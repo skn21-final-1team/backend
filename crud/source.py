@@ -47,6 +47,14 @@ def get_active_source_ids(db: Session, source_ids: Sequence[int]) -> list[int]:
     return list(db.scalars(stmt).all())
 
 
+def get_sources_by_ids(db: Session, source_ids: Sequence[int]) -> Sequence[SourceModel]:
+    if not source_ids:
+        return []
+
+    stmt = select(SourceModel).where(SourceModel.id.in_(source_ids))
+    return db.scalars(stmt).all()
+
+
 def delete_source_by_source_id(db: Session, source_id: int) -> SourceModel | None:
     source = db.query(SourceModel).filter(SourceModel.id == source_id).first()
     if not source:
