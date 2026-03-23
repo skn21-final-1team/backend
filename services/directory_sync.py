@@ -6,6 +6,7 @@ import crud.directory as directory_crud
 import crud.extension_sync_key as extension_sync_key_crud
 import crud.source as source_crud
 from core.exceptions.auth import InvalidTokenException
+from models.extension import ExtensionSyncKeyModel
 from schemas.directory import BookmarkFromExtension
 
 from schemas.crawl import CrawlSyncBody, CrawlSyncRequest
@@ -13,12 +14,16 @@ from services.crawl import crawl_service
 
 
 class DirectorySyncService:
-    def get_user_id_from_sync_key(self, sync_key: str, db: Session) -> bool:
+    def get_user_id_from_sync_key(self, sync_key: str, db: Session) -> ExtensionSyncKeyModel:
         sync_key = extension_sync_key_crud.get_sync_key(db, sync_key)
         if not sync_key:
             raise InvalidTokenException
 
-        if sync_key.expires_at < datetime.now(UTC):
+        now = datetime.now(UTC)
+        expires_at = sync_key.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        if expires_at < now:
             raise InvalidTokenException
 
         return sync_key
@@ -64,13 +69,13 @@ class DirectorySyncService:
                         source_id=source.id,
                     )
                 )
-        db.commit()
         return crawl_list
 
     def sync_bookmarks(self, sync_key: str, bookmarks: list[BookmarkFromExtension], db: Session) -> CrawlSyncRequest:
         target = self.get_user_id_from_sync_key(sync_key, db)
         crawl_request = self.save_directory_tree(db, bookmarks, target.notebook_id, None)
         self.delete_sync_key(sync_key, db)
+        db.commit()
         return crawl_request
 
     async def _crawl_calling(self, body: CrawlSyncRequest) -> None:
