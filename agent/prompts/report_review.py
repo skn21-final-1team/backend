@@ -14,6 +14,8 @@ REVIEW_DECISION_SYSTEM_PROMPT = """
 - 현재 단계 산출물 요구사항을 참고하여 피드백이 요구사항과 완전히 다른 내용을 원하면 reset.
 - 불확실하면 더 큰 범위 변경이 필요한지 우선 판단하고, 필요 없으면 revise를 선택한다.
 
+approve로 취급되는 단어 예시: 좋아, 다음, 완료, 승인, 괜찮아, 진행, 문제 없어, 완벽해, 최고야, 완성됐어, 이대로 해줘
+
 반드시 JSON만 출력한다.
 형식은 다음과 같다.
 {"action":"approve|revise|reset","reason":"간단한 근거","next_step":1}
