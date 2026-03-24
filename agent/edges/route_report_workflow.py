@@ -18,6 +18,8 @@ def route_report_workflow(state: WorkflowState) -> str:
         target = WORKFLOW_NAME_BY_STEP[step]
     elif action == "approve":
         target = END if step >= FINAL_WORKFLOW_STEP else WORKFLOW_NAME_BY_STEP[step + 1]
+    elif action == "except":
+        target = "await_user_review"
     else:
         target = WORKFLOW_NAME_BY_STEP[step]
 

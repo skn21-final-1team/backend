@@ -16,7 +16,7 @@ from agent.workflow_types import (
 
 
 class ReviewDecisionPayload(BaseModel):
-    action: str = Field(description="approve, revise, reset 중 하나")
+    action: str = Field(description="approve, revise, reset, except 중 하나")
     reason: str = Field(description="판정 근거")
     next_step: int = Field(description="권장 다음 단계 번호")
 
@@ -79,7 +79,14 @@ async def review_decision(state: WorkflowState, config: RunnableConfig) -> dict[
     )
 
     action = payload.action.strip().lower()
-    if action not in {"approve", "revise", "reset"}:
+
+    if action == "except":
+        return {
+            "action": "except",
+            "system_message": "무슨말씀인지 잘 모르겠어요. 추가 피드백을 작성해주세요.",
+        }
+
+    if action not in {"approve", "revise", "reset", "except"}:
         error_message = f"review_decision returned unsupported action: {payload.action}"
         raise ValueError(error_message)
 
@@ -87,8 +94,8 @@ async def review_decision(state: WorkflowState, config: RunnableConfig) -> dict[
     next_step = int(payload.next_step)
 
     print(
-        f"review decision resolved: step={step}, step_name={step_name}, "
-        f"action={action}, next_step={next_step}, reason={reason}"
+        f"review decision resolved: step={step}, step_name={step_name}, query={state['message']}"
+        f"action={action}, next_step={next_step}, reason={reason}",
     )
 
     summary = "\n".join(

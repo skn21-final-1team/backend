@@ -11,7 +11,7 @@ from core.config import get_settings
 
 setting = get_settings()
 
-engine = create_engine(setting.database_url)
+engine = create_engine(setting.database_url, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

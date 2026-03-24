@@ -267,6 +267,7 @@ class ReportService:
         has_pending_work = bool(state_snapshot.next)
         graph_input = self.__build_stream_input(req, source_snapshot, has_pending_work)
         last_interrupt_signature: tuple[str | None, str | None] | None = None
+        execution_started = False
 
         yield self.__sse_event(
             "thread",
@@ -275,6 +276,7 @@ class ReportService:
 
         async for chunk_type, chunk_data in report_workflow_runtime.stream(graph_input, config):
             if chunk_type == "updates":
+                execution_started = True
                 interrupts = chunk_data.get("__interrupt__", ())
                 if interrupts:
                     for payload in self.__extract_interrupt_payloads(interrupts):
@@ -294,6 +296,8 @@ class ReportService:
                 continue
 
             if chunk_type == "values":
+                if not execution_started:
+                    continue
                 interrupts = chunk_data.get("__interrupt__", ())
                 for payload in self.__extract_interrupt_payloads(interrupts):
                     signature = (payload["system_message"], payload["content"])
