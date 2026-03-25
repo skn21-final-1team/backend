@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import re
+
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, Field
@@ -19,6 +22,31 @@ class ReviewDecisionPayload(BaseModel):
     action: str = Field(description="approve, revise, reset, except 중 하나")
     reason: str = Field(description="판정 근거")
     next_step: int = Field(description="권장 다음 단계 번호")
+
+
+_VALID_ACTIONS = {"approve", "revise", "reset", "except"}
+
+
+def _parse_review_decision_from_text(text: str) -> ReviewDecisionPayload:
+    """structured output 미지원 모델용: 텍스트 응답에서 JSON을 파싱합니다."""
+    json_match = re.search(r"\{[^{}]*\}", text, re.DOTALL)
+    if not json_match:
+        return ReviewDecisionPayload(action="except", reason="응답 파싱 실패", next_step=1)
+
+    try:
+        data = json.loads(json_match.group())
+    except json.JSONDecodeError:
+        return ReviewDecisionPayload(action="except", reason="JSON 파싱 실패", next_step=1)
+
+    action = str(data.get("action", "except")).strip().lower()
+    if action not in _VALID_ACTIONS:
+        action = "except"
+
+    return ReviewDecisionPayload(
+        action=action,
+        reason=str(data.get("reason", "")),
+        next_step=int(data.get("next_step", 1)),
+    )
 
 
 def _build_current_output(state: WorkflowState) -> str:
@@ -58,25 +86,29 @@ async def review_decision(state: WorkflowState, config: RunnableConfig) -> dict[
     current_output = _build_current_output(state)
     workflow_snapshot = _build_snapshot_text(state)
 
-    llm = llm_factory.get_llm(config).with_structured_output(
-        ReviewDecisionPayload,
-        method="json_schema",
-        strict=True,
-    )
-    payload = await llm.ainvoke(
-        [
-            SystemMessage(content=REVIEW_DECISION_SYSTEM_PROMPT),
-            HumanMessage(
-                content=REVIEW_DECISION_USER_PROMPT.format(
-                    message=state["message"],
-                    step=step,
-                    step_name=step_name,
-                    current_output=current_output,
-                    workflow_snapshot=workflow_snapshot,
-                )
-            ),
-        ]
-    )
+    messages = [
+        SystemMessage(content=REVIEW_DECISION_SYSTEM_PROMPT),
+        HumanMessage(
+            content=REVIEW_DECISION_USER_PROMPT.format(
+                message=state["message"],
+                step=step,
+                step_name=step_name,
+                current_output=current_output,
+                workflow_snapshot=workflow_snapshot,
+            )
+        ),
+    ]
+
+    llm = llm_factory.get_llm(config)
+    if llm_factory.supports_structured_output(config):
+        payload = await llm.with_structured_output(
+            ReviewDecisionPayload,
+            method="json_schema",
+            strict=True,
+        ).ainvoke(messages)
+    else:
+        response = await llm.ainvoke(messages)
+        payload = _parse_review_decision_from_text(response.content)
 
     action = payload.action.strip().lower()
 
