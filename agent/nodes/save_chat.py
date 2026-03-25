@@ -19,7 +19,7 @@ def save_chat(state: QAState) -> dict[str, str]:
             notebook_id=state["notebook_id"],
             role="assistant",
             message=state["answer"],
-            reference_source=state["source_metadata"],
+            reference_source=state.get("source_metadata"),
         )
 
         return {"answer": state["answer"]}
