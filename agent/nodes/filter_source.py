@@ -1,9 +1,12 @@
+import logging
 import re
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 
 from agent.model.llm_factory import llm_factory
+
+logger = logging.getLogger(__name__)
 from agent.workflow_state import WorkflowState
 from crud.source import get_active_source_ids, get_source_ids_by_notebook, get_sources_by_ids
 from db.database import get_db_context
@@ -95,28 +98,32 @@ async def filter_source(state: WorkflowState, config: RunnableConfig) -> dict[st
         return {"source_snapshot": ""}
 
     llm = llm_factory.get_llm(config)
-    response = await llm.ainvoke(
-        [
-            SystemMessage(content=_FILTER_SOURCE_SYSTEM_PROMPT),
-            HumanMessage(
-                content="\n\n".join(
-                    [
-                        f"## 사용자 요청\n{query}",
-                        "## source 후보",
-                        candidate_text,
-                        (
-                            "출력 규칙:\n"
-                            "- 관련된 source id만 선택\n"
-                            "- 숫자 id만 쉼표로 구분해서 출력\n"
-                            "- 설명, 이유, JSON, 마크다운 금지"
-                        ),
-                    ]
-                )
-            ),
-        ]
-    )
+    try:
+        response = await llm.ainvoke(
+            [
+                SystemMessage(content=_FILTER_SOURCE_SYSTEM_PROMPT),
+                HumanMessage(
+                    content="\n\n".join(
+                        [
+                            f"## 사용자 요청\n{query}",
+                            "## source 후보",
+                            candidate_text,
+                            (
+                                "출력 규칙:\n"
+                                "- 관련된 source id만 선택\n"
+                                "- 숫자 id만 쉼표로 구분해서 출력\n"
+                                "- 설명, 이유, JSON, 마크다운 금지"
+                            ),
+                        ]
+                    )
+                ),
+            ]
+        )
+        selected_source_ids = _parse_selected_source_ids(response.content, set(active_source_ids))
+    except Exception as e:
+        logger.warning("filter_source LLM call failed, using all active sources: %s", e)
+        selected_source_ids = active_source_ids[:_MAX_SELECTED_SOURCE_COUNT]
 
-    selected_source_ids = _parse_selected_source_ids(response.content, set(active_source_ids))
     sources = get_sources_by_ids(db, selected_source_ids)
     print("selected_source_ids", selected_source_ids)
     source_snapshot = _build_source_snapshot(sources)
