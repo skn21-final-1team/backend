@@ -3,8 +3,14 @@ from sqlalchemy.orm import Session
 from models.chat import ChatModel
 
 
-def create_chat(db: Session, notebook_id: int, role: str, message: str) -> ChatModel:
-    new_chat = ChatModel(role=role, message=message, notebook_id=notebook_id)
+def create_chat(
+    db: Session,
+    notebook_id: int,
+    role: str,
+    message: str,
+    reference_source: list | None = None,
+) -> ChatModel:
+    new_chat = ChatModel(role=role, message=message, notebook_id=notebook_id, reference_source=reference_source)
     db.add(new_chat)
     db.commit()
     db.refresh(new_chat)

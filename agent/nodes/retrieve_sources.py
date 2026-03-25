@@ -73,10 +73,12 @@ async def retrieve_sources(state: QAState) -> dict:
             source_info = {r.id: {"url": r.url, "title": r.title} for r in rows}
 
     source_metadata = []
-    for content in reranked:
+    for seq, content in enumerate(reranked, start=1):
         sid = content_to_source_id.get(content)
         info = source_info.get(sid, {})
         source_metadata.append({
+            "seq": seq,
+            "source_id": sid,
             "content": content,
             "url": info.get("url", ""),
             "title": info.get("title", ""),

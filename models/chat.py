@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.sql import func
 
 from db.database import Base
@@ -12,3 +12,4 @@ class ChatModel(Base):
     message = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     notebook_id = Column(Integer, ForeignKey("notebook.id", ondelete="CASCADE"), nullable=False)
+    reference_source = Column(JSON, nullable=True)

@@ -16,11 +16,14 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     role: str
     message: str
     created_at: datetime
     notebook_id: int
+    reference_source: list[dict] | None = None
 
 
 class ChatHistoryForAgent(BaseModel):

@@ -14,7 +14,14 @@ def save_chat(state: QAState) -> dict[str, str]:
     db = SessionLocal()
     try:
         create_chat(db, notebook_id=state["notebook_id"], role="user", message=state["question"])
-        create_chat(db, notebook_id=state["notebook_id"], role="assistant", message=state["answer"])
+        create_chat(
+            db,
+            notebook_id=state["notebook_id"],
+            role="assistant",
+            message=state["answer"],
+            reference_source=state["source_metadata"],
+        )
+
         return {"answer": state["answer"]}
     finally:
         db.close()
