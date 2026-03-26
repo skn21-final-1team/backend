@@ -26,7 +26,7 @@ class LLMModel:
     }
 
     EXAONE_CONFIG = {
-        "model": "LGAI-EXAONE/EXAONE-4.0-32B-FP8",
+        "model": "lgai-exaone/exaone-4.0-32b-fp8",
         "base_url": f"{settings.custom_llm_url}/openai/v1",
         "temperature": 0,
         "api_key": settings.runpod_api_key,
