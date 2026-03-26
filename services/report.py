@@ -22,6 +22,7 @@ from schemas.report_workflow import (
     WorkflowStatus as ApiWorkflowStatus,
 )
 from services.report_workflow_runtime import (
+    WorkflowCheckpointSnapshot,
     ReviewInterruptPayload,
     WorkflowStateSnapshot,
     report_workflow_runtime,
@@ -149,34 +150,13 @@ class ReportService:
     def __to_api_workflow_step(self, step: InternalWorkflowStep) -> ApiReportWorkflowStep:
         return _API_WORKFLOW_STEP_BY_INTERNAL[step]
 
-    def __resolve_workflow_status(
-        self,
-        values: WorkflowStateSnapshot,
-        next_nodes: tuple[str, ...],
-        interrupts: tuple[Interrupt, ...],
-    ) -> InternalWorkflowStatus:
-        if not values:
-            return "idle"
-        if interrupts:
-            return "awaiting_review"
-        if next_nodes:
-            return "in_progress"
-        return values["status"]
-
-    def __resolve_current_step_number(self, values: WorkflowStateSnapshot) -> InternalWorkflowStep | None:
-        if not values:
-            return None
-        return values["step"]
-
     def __resolve_workflow_state(
         self,
-        state_snapshot: object,
+        checkpoint_snapshot: WorkflowCheckpointSnapshot,
     ) -> tuple[ApiWorkflowStatus, ApiReportWorkflowStep | None, ReportWorkflowStepOutputs]:
-        values: WorkflowStateSnapshot = getattr(state_snapshot, "values", {})
-        next_nodes: tuple[str, ...] = getattr(state_snapshot, "next", ())
-        interrupts: tuple[Interrupt, ...] = getattr(state_snapshot, "interrupts", ())
-        workflow_status = self.__resolve_workflow_status(values, next_nodes, interrupts)
-        current_step = self.__resolve_current_step_number(values)
+        values = checkpoint_snapshot["values"]
+        workflow_status = checkpoint_snapshot["status"]
+        current_step = checkpoint_snapshot["current_step"]
 
         return (
             self.__to_api_workflow_status(workflow_status),
@@ -189,9 +169,10 @@ class ReportService:
         if not notebook:
             raise NotebookNotFoundException
 
-        workflow_status, current_step, step_outputs = self.__resolve_workflow_state(
-            report_workflow_runtime.get_state(self.__build_config(notebook_id))
+        checkpoint_snapshot = report_workflow_runtime.get_checkpoint_snapshot(
+            self.__build_config(notebook_id)
         )
+        workflow_status, current_step, step_outputs = self.__resolve_workflow_state(checkpoint_snapshot)
 
         return ReportWorkflowStateResponse(
             workflow_status=workflow_status,
@@ -261,10 +242,10 @@ class ReportService:
             raise NotebookNotFoundException
 
         config = self.__build_config(req.notebook_id, req.model_name)
-        state_snapshot = report_workflow_runtime.get_state(config)
-        state_values: WorkflowStateSnapshot = getattr(state_snapshot, "values", {})
+        checkpoint_snapshot = report_workflow_runtime.get_checkpoint_snapshot(config)
+        state_values: WorkflowStateSnapshot = checkpoint_snapshot["values"]
         source_snapshot = state_values.get("source_snapshot", "")
-        has_pending_work = bool(state_snapshot.next)
+        has_pending_work = checkpoint_snapshot["is_resumable"]
         graph_input = self.__build_stream_input(req, source_snapshot, has_pending_work)
         last_interrupt_signature: tuple[str | None, str | None] | None = None
         execution_started = False
