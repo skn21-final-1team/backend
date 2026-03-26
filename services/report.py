@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from agent.model.llm_factory import DEFAULT_LLM_MODEL_NAME
 from core.exceptions.notebook import NotebookNotFoundException
+from db.report_workflow_lock import acquire_report_workflow_lock
 from crud.notebook import get_notebook
 from schemas.report_workflow import (
     ReportWorkflowRequest,
@@ -22,8 +23,9 @@ from schemas.report_workflow import (
     WorkflowStatus as ApiWorkflowStatus,
 )
 from services.report_workflow_runtime import (
-    WorkflowCheckpointSnapshot,
     ReviewInterruptPayload,
+    WorkflowCheckpointSnapshot,
+    WorkflowResumeMode,
     WorkflowStateSnapshot,
     report_workflow_runtime,
 )
@@ -155,7 +157,7 @@ class ReportService:
         checkpoint_snapshot: WorkflowCheckpointSnapshot,
     ) -> tuple[ApiWorkflowStatus, ApiReportWorkflowStep | None, ReportWorkflowStepOutputs]:
         values = checkpoint_snapshot["values"]
-        workflow_status = checkpoint_snapshot["status"]
+        workflow_status = checkpoint_snapshot["workflow_status"]
         current_step = checkpoint_snapshot["current_step"]
 
         return (
@@ -169,9 +171,7 @@ class ReportService:
         if not notebook:
             raise NotebookNotFoundException
 
-        checkpoint_snapshot = report_workflow_runtime.get_checkpoint_snapshot(
-            self.__build_config(notebook_id)
-        )
+        checkpoint_snapshot = report_workflow_runtime.get_checkpoint_snapshot(self.__build_config(notebook_id))
         workflow_status, current_step, step_outputs = self.__resolve_workflow_state(checkpoint_snapshot)
 
         return ReportWorkflowStateResponse(
@@ -212,15 +212,17 @@ class ReportService:
         self,
         req: ReportWorkflowRequest,
         source_snapshot: str,
-        has_pending_work: bool,
-    ) -> dict[str, object] | Command:
-        if has_pending_work:
+        resume_mode: WorkflowResumeMode,
+    ) -> dict[str, object] | Command | None:
+        if resume_mode == "review":
             return Command(
                 resume={
                     "message": req.message,
                     "source_snapshot": source_snapshot,
                 }
             )
+        if resume_mode == "continue":
+            return None
         return self.__build_initial_state(req)
 
     def __build_config(
@@ -228,7 +230,6 @@ class ReportService:
         notebook_id: int,
         model_name: str = DEFAULT_LLM_MODEL_NAME,
     ) -> dict[str, object]:
-        print("model_name in config:", model_name)  # 디버깅용 출력
         return {
             "configurable": {
                 "model_name": model_name,
@@ -245,49 +246,50 @@ class ReportService:
         checkpoint_snapshot = report_workflow_runtime.get_checkpoint_snapshot(config)
         state_values: WorkflowStateSnapshot = checkpoint_snapshot["values"]
         source_snapshot = state_values.get("source_snapshot", "")
-        has_pending_work = checkpoint_snapshot["is_resumable"]
-        graph_input = self.__build_stream_input(req, source_snapshot, has_pending_work)
+        resume_mode = checkpoint_snapshot["resume_mode"]
+        graph_input = self.__build_stream_input(req, source_snapshot, resume_mode)
         last_interrupt_signature: tuple[str | None, str | None] | None = None
         execution_started = False
 
-        yield self.__sse_event(
-            "thread",
-            self.__build_thread_payload("resume" if has_pending_work else "start"),
-        )
+        with acquire_report_workflow_lock(req.notebook_id):
+            yield self.__sse_event(
+                "thread",
+                self.__build_thread_payload("resume" if resume_mode != "start" else "start"),
+            )
 
-        async for chunk_type, chunk_data in report_workflow_runtime.stream(graph_input, config):
-            if chunk_type == "updates":
-                execution_started = True
-                interrupts = chunk_data.get("__interrupt__", ())
-                if interrupts:
+            async for chunk_type, chunk_data in report_workflow_runtime.stream(graph_input, config):
+                if chunk_type == "updates":
+                    execution_started = True
+                    interrupts = chunk_data.get("__interrupt__", ())
+                    if interrupts:
+                        for payload in self.__extract_interrupt_payloads(interrupts):
+                            signature = (payload["system_message"], payload["content"])
+                            if signature == last_interrupt_signature:
+                                continue
+                            last_interrupt_signature = signature
+                            yield self.__sse_event("await_user_review", payload)
+                        continue
+
+                    for node_name, node_update in chunk_data.items():
+                        if node_name not in _STEP_EVENT_NAMES:
+                            continue
+                        payload = self.__build_step_payload(node_name, node_update)
+                        last_interrupt_signature = None
+                        yield self.__sse_event(node_name, payload)
+                    continue
+
+                if chunk_type == "values":
+                    if not execution_started:
+                        continue
+                    interrupts = chunk_data.get("__interrupt__", ())
                     for payload in self.__extract_interrupt_payloads(interrupts):
                         signature = (payload["system_message"], payload["content"])
                         if signature == last_interrupt_signature:
                             continue
                         last_interrupt_signature = signature
                         yield self.__sse_event("await_user_review", payload)
-                    continue
 
-                for node_name, node_update in chunk_data.items():
-                    if node_name not in _STEP_EVENT_NAMES:
-                        continue
-                    payload = self.__build_step_payload(node_name, node_update)
-                    last_interrupt_signature = None
-                    yield self.__sse_event(node_name, payload)
-                continue
-
-            if chunk_type == "values":
-                if not execution_started:
-                    continue
-                interrupts = chunk_data.get("__interrupt__", ())
-                for payload in self.__extract_interrupt_payloads(interrupts):
-                    signature = (payload["system_message"], payload["content"])
-                    if signature == last_interrupt_signature:
-                        continue
-                    last_interrupt_signature = signature
-                    yield self.__sse_event("await_user_review", payload)
-
-        yield self.__sse_event("done", self.__build_done_payload())
+            yield self.__sse_event("done", self.__build_done_payload())
 
 
 report_service = ReportService()

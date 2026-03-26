@@ -1,4 +1,3 @@
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, StateGraph
 
 from agent.edges.route_report_workflow import route_report_workflow
@@ -10,6 +9,7 @@ from agent.nodes.requirement import analyze_requirement
 from agent.nodes.review_decision import review_decision
 from agent.nodes.skeleton import build_skeleton
 from agent.workflow_state import WorkflowState
+from db.report_workflow_checkpoint_saver import report_workflow_checkpoint_saver
 
 workflow = StateGraph(WorkflowState)
 
@@ -30,4 +30,4 @@ workflow.add_edge("final", "await_user_review")
 workflow.add_edge("await_user_review", "review_decision")
 workflow.add_conditional_edges("review_decision", route_report_workflow)
 
-report_graph = workflow.compile(checkpointer=MemorySaver())
+report_graph = workflow.compile(checkpointer=report_workflow_checkpoint_saver)

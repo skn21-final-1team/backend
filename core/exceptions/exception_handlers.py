@@ -15,6 +15,7 @@ from core.exceptions.chat import ChatNotFoundException
 from core.exceptions.common import InvalidRequestException
 from core.exceptions.crawl import CrawlFailedException, FirecrawlConnectionException, FirecrawlContainerException
 from core.exceptions.notebook import NotebookNotFoundException
+from core.exceptions.report import ReportWorkflowAlreadyRunningException
 from core.exceptions.user import (
     InvalidUserException,
     UserAlreadyExistsException,
@@ -47,6 +48,7 @@ def init_exception_handlers(app: FastAPI):
     app.add_exception_handler(FirecrawlContainerException, custom_base_handler)
     app.add_exception_handler(InvalidRequestException, custom_base_handler)
     app.add_exception_handler(NotebookNotFoundException, custom_base_handler)
+    app.add_exception_handler(ReportWorkflowAlreadyRunningException, custom_base_handler)
     app.add_exception_handler(ChatNotFoundException, custom_base_handler)
     app.add_exception_handler(InvalidTokenException, custom_base_handler)
     app.add_exception_handler(ExpiredRefreshTokenException, custom_base_handler)

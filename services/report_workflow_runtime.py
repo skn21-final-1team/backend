@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 from langgraph.types import Command, Interrupt
 
@@ -32,14 +32,14 @@ class ReviewInterruptPayload(TypedDict):
     step_name: WorkflowStepName
 
 
+WorkflowResumeMode = Literal["start", "continue", "review"]
+
+
 class WorkflowCheckpointSnapshot(TypedDict):
     values: WorkflowStateSnapshot
-    next_nodes: tuple[str, ...]
-    interrupts: tuple[Interrupt, ...]
-    status: WorkflowStatus
+    workflow_status: WorkflowStatus
     current_step: WorkflowStep | None
-    has_checkpoint: bool
-    is_resumable: bool
+    resume_mode: WorkflowResumeMode
 
 
 class ReportWorkflowRuntime:
@@ -47,6 +47,12 @@ class ReportWorkflowRuntime:
     step_by_name = WORKFLOW_STEP_BY_NAME
     output_field_by_step = WORKFLOW_OUTPUT_FIELD_BY_STEP
     step_event_names = tuple(WORKFLOW_STEP_BY_NAME)
+    _review_wait_node_name = "await_user_review"
+    _review_decision_node_name = "review_decision"
+    _source_filter_node_name = "filter_source"
+
+    def _get_pending_node_name(self, next_nodes: tuple[str, ...]) -> str | None:
+        return next_nodes[0] if next_nodes else None
 
     def _resolve_checkpoint_status(
         self,
@@ -56,38 +62,69 @@ class ReportWorkflowRuntime:
     ) -> WorkflowStatus:
         if interrupts:
             return "awaiting_review"
+        pending_node_name = self._get_pending_node_name(next_nodes)
+        if pending_node_name == self._review_wait_node_name:
+            return "awaiting_review"
         if next_nodes:
             return "in_progress"
         if values:
             return values.get("status", "in_progress")
         return "idle"
 
+    def _resolve_current_step(
+        self,
+        values: WorkflowStateSnapshot,
+        next_nodes: tuple[str, ...],
+        interrupts: tuple[Interrupt, ...],
+    ) -> WorkflowStep | None:
+        saved_step = values.get("step")
+        if interrupts:
+            return saved_step
+
+        pending_node_name = self._get_pending_node_name(next_nodes)
+        if pending_node_name is None:
+            return saved_step
+        if pending_node_name in self.step_by_name:
+            return self.step_by_name[pending_node_name]
+        if pending_node_name in {self._review_wait_node_name, self._review_decision_node_name}:
+            return saved_step
+        if pending_node_name == self._source_filter_node_name:
+            return saved_step or self.initial_step
+        return saved_step
+
+    def _resolve_resume_mode(
+        self,
+        next_nodes: tuple[str, ...],
+        interrupts: tuple[Interrupt, ...],
+    ) -> WorkflowResumeMode:
+        if interrupts:
+            return "review"
+        pending_node_name = self._get_pending_node_name(next_nodes)
+        if pending_node_name == self._review_wait_node_name:
+            return "review"
+        if next_nodes:
+            return "continue"
+        return "start"
+
     def get_checkpoint_snapshot(self, config: dict[str, object]) -> WorkflowCheckpointSnapshot:
         state_snapshot = report_graph.get_state(config)
         values: WorkflowStateSnapshot = getattr(state_snapshot, "values", {})
         next_nodes: tuple[str, ...] = tuple(getattr(state_snapshot, "next", ()))
         interrupts: tuple[Interrupt, ...] = tuple(getattr(state_snapshot, "interrupts", ()))
-        has_checkpoint = bool(values or next_nodes or interrupts)
 
         return WorkflowCheckpointSnapshot(
             values=values,
-            next_nodes=next_nodes,
-            interrupts=interrupts,
-            status=self._resolve_checkpoint_status(values, next_nodes, interrupts),
-            current_step=values.get("step"),
-            has_checkpoint=has_checkpoint,
-            is_resumable=bool(next_nodes or interrupts),
+            workflow_status=self._resolve_checkpoint_status(values, next_nodes, interrupts),
+            current_step=self._resolve_current_step(values, next_nodes, interrupts),
+            resume_mode=self._resolve_resume_mode(next_nodes, interrupts),
         )
-
-    def get_state(self, config: dict[str, object]) -> object:
-        return report_graph.get_state(config)
 
     def reset_thread(self, thread_id: str) -> None:
         report_graph.checkpointer.delete_thread(thread_id)
 
     def stream(
         self,
-        graph_input: dict[str, object] | Command,
+        graph_input: dict[str, object] | Command | None,
         config: dict[str, object],
     ) -> AsyncGenerator[tuple[str, dict[str, object]], None]:
         return report_graph.astream(

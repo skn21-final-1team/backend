@@ -11,6 +11,17 @@ config.set_main_option("sqlalchemy.url", url)
 
 
 target_metadata = Base.metadata
+IGNORED_AUTOGENERATE_TABLES = {
+    "alembic_version_data",
+    "langchain_pg_collection",
+    "langchain_pg_embedding",
+}
+
+
+def include_object(object_, name, type_, reflected, compare_to):
+    if type_ == "table" and reflected and compare_to is None and name in IGNORED_AUTOGENERATE_TABLES:
+        return False
+    return True
 
 
 def run_migrations_offline() -> None:
@@ -20,6 +31,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -37,6 +49,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            include_object=include_object,
         )
 
         with context.begin_transaction():

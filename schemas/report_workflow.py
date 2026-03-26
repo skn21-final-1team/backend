@@ -100,14 +100,21 @@ class ReportWorkflowStateResponse(BaseModel):
     workflow_status: WorkflowStatus = Field(
         ...,
         description=(
-            "현재 워크플로우의 진행 상태. `idle`이면 아직 시작되지 않았거나 복원할 진행 정보가 없는 상태를 의미한다."
+            "프론트 복원 기준의 현재 워크플로우 상태. "
+            "`awaiting_review`면 사용자가 이어서 검토/수정할 수 있는 단계이고, "
+            "`in_progress`면 저장된 체크포인트부터 다음 단계를 계속 실행해야 하는 상태다. "
+            "`idle`이면 아직 시작되지 않았거나 복원할 진행 정보가 없는 상태를 의미한다."
         ),
         examples=["idle", "awaiting_review"],
     )
     current_step: ReportWorkflowStep | None = Field(
         ...,
-        description="현재 워크플로우 단계 번호. 값이 없으면 아직 시작되지 않은 상태를 의미한다.",
-        examples=[None, 2],
+        description=(
+            "프론트가 현재 편집/검토 대상으로 복원해야 하는 단계 번호. "
+            "실행 대기 중인 다음 단계가 있으면 그 단계를 반환하고, 검토 대기 상태면 검토 중인 단계를 반환한다. "
+            "값이 없으면 아직 시작되지 않은 상태를 의미한다."
+        ),
+        examples=[None, 2, 4],
     )
     step_outputs: ReportWorkflowStepOutputs = Field(
         ...,

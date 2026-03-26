@@ -71,7 +71,8 @@ _REPORT_WORKFLOW_RESET_RESPONSE_EXAMPLE = BaseResponse.ok(
                     "example": _REPORT_WORKFLOW_STEP_STREAM_EXAMPLE,
                 }
             },
-        }
+        },
+        409: {"description": "해당 노트북의 리포트 워크플로우가 이미 실행 중인 경우"},
     },
 )
 async def run_report_workflow(req: ReportWorkflowRequest, db: DbSession) -> StreamingResponse:
