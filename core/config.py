@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     reranker_url: str = Field(default="", alias="RERANKER_MODEL_URL")
     custom_llm_url: str = Field(default="", alias="CUSTOM_LLM_MODEL_URL")
     runpod_api_key: str = Field(default="", alias="RUNPOD_API_KEY")
+    frontend_url: str = Field(default="http://localhost:3000", alias="FRONTEND_URL")
     backend_cors_origins: list[str] = Field(default=["http://localhost:3000"], alias="BACKEND_CORS_ORIGINS")
 
 

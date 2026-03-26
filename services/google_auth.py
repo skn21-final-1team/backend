@@ -39,7 +39,7 @@ class GoogleAuthService:
                 "code": code,
                 "client_id": settings.google_client_id,
                 "client_secret": settings.google_client_secret,
-                "redirect_uri": "http://localhost:3000/auth/callback",
+                "redirect_uri": f"{settings.frontend_url}/auth/callback",
                 "grant_type": "authorization_code",
             },
         )
